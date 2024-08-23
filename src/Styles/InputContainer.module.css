@@ -1,0 +1,24 @@
+.container {
+    height: 100px;
+    border: 2px dashed lightblue;
+    max-width: 70%;
+    padding: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    display: inline-block;
+}
+
+.controls {
+        height: 100px;
+    border: 2px dashed lightblue;
+    max-width: 70%;
+}
+
+label {
+    display: block;
+  }
+  
+  input, button {
+    display: inline-block;
+  }

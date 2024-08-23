@@ -1,0 +1,18 @@
+.container {
+    height: 100px;
+    border: 2px dashed lightblue;
+    max-width: 70%;
+    width: fit-content;
+    padding: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container > ol > li {
+    cursor: pointer;
+}
+
+.container > ol > li:hover {
+    color: red;
+}
