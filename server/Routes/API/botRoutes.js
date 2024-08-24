@@ -30,6 +30,8 @@ router.route("/stop").get(botController.stopYoutube);
 
 router.route("/shuffle").get(botController.shuffleYoutube);
 
+router.route('/order').post(botController.updateOrder);
+
 
 
 module.exports = router;

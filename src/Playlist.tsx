@@ -1,83 +1,65 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from "./Styles/Playlist.module.css";
-import SongList from "./Components/SongList.tsx";
 import InputContainer from "./Components/InputContainer.tsx";
+import axios from 'axios';
+import { SongList } from './Components/SongList.tsx';
+import { AiOutlineCloseSquare } from "react-icons/ai";
+import socket from './Socket/socket.js';
 
 
-class HomePage extends Component {
-    // state = {
-    //     links: [
-    //         {
-    //             title: "",
-    //             image: ""
-    //         }
-    //     ],
-    //     nowPlayingIndex: 0
-    // }
+export default function Playlist() {
 
-    // stop = () => {
-    //     this.setState({ nowPlayingIndex: 0 }, () => {
-    //         API.stopYoutube();
-    //     })
-    // }
-
-
-    // refreshLinks = async () => {
-    //     let files = await API.getLinks();
-    //     this.setState({ links: files.data });
-    //     this.emitRefreshMessage();
-    // }
-
-    // emitRefreshMessage = () => {
-    //     socket.emit("refresh", {
-    //         msg: "we need you to update"
-    //     })
-    // }
-
-    // shouldComponentUpdate = (prevState, prevProps) => {
-    //     if (prevState !== this.state) {
-    //         return true;
-    //     }
-    // }
-
-    // componentDidMount = async () => {
-    //     let files = await API.getLinks();
-    //     this.setState({ links: files.data });
-
-    //     socket.on("refresh", () => {
-    //         this.refreshLinks();
-    //     });
-    // }
-
-    render = () => {
-        return (
-            <div className={styles.background}>
-                <SongList />
-                <InputContainer />
-                {/* <input /> */}
-                {/* <div className={styles.header}>
-                    <div className={styles.imageHeader}>
-                        <div className={styles.headerText}>
-                            <span className={styles.funnyText}>Website</span>
-                        </div>
-                        <img className={styles.img} src={q} alt="Pic" />
-                        <div className={styles.headerText}>
-                            <span className={styles.funnyText}>Header :)</span>
-                        </div>
-                    </div>
-                </div>
-                <div className={`${styles.div} ${styles.nowPlayingHeader}`}>
-                    <NowPlaying song={{}} prev={this.prev} next={this.next} index={this.state.nowPlayingIndex} />
-                    <AddNew refreshLinks={this.refreshLinks} />
-                    <PlayList />
-                </div> */}
-
-
-
-            </div>
-        )
+    const removeSong = (id) => {
+        axios.post('/api/bot/delete', { id: id }).then((result) => {
+            setSongList(result.data.newList);
+        });
     }
 
-}
+    const updateOrder = (list) => {
+        setSongList(list);
+        axios.post('/api/bot/order', { list: list });
+    }
 
-export default HomePage;
+    useEffect(() => {
+        axios.get('/api/bot/links').then(result => {
+            setSongList(result.data);
+        });
+        
+        socket.on('songAdded', (payload) => {
+            console.log(payload.message);
+            setSongList(payload.updatedList);
+        });
+
+        socket.on('songRemoved', (payload) => {
+            console.log(payload.message);
+            setSongList(payload.updatedList);
+        });
+
+
+
+    }, []);
+
+    const [songList, setSongList] = useState([]);
+
+    return (
+        <div className={styles.background} >
+            <h1 className={styles.header}>
+                Bimbus
+            </h1>
+            <SongList
+                items={songList}
+                onChange={updateOrder}
+                renderItem={(item) => (
+                    <SongList.Item id={item.id}>
+                        <SongList.DragHandle id={item.id} />
+                        <span className={styles.songTitle}>{item.title}</span>
+                        <AiOutlineCloseSquare onClick={() => removeSong(item.id)} className={styles.closeIcon} />
+                    </SongList.Item>
+                )}
+            />
+            <InputContainer />
+        </div>
+    );
+
+
+}

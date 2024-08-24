@@ -1,0 +1,12 @@
+.container {
+    height: 1px;
+}
+
+.container > ol > li {
+    cursor: pointer;
+}
+
+.container > ol > li:hover {
+    color: red;
+}
+

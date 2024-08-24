@@ -1,5 +1,5 @@
 require("dotenv").config();
-let youtubeLinks = require('../public/links.json');
+let youtubeLinks = require('../server/links.json');
 
 
 const { Client, GatewayIntentBits } = require('discord.js')
@@ -125,4 +125,4 @@ module.exports = {
     volumeDown
 }
 
-client.login(process.env.DISCORD_TOKEN);
+// client.login(process.env.DISCORD_TOKEN);

@@ -1,0 +1,50 @@
+.songItem {
+  display: flex;
+  flex-direction: row;
+  border: 2px outset lightblue;
+  margin-bottom: 2px;
+  align-items: center;
+  padding: 5px;
+}
+
+.songItem:hover {}
+
+.closeButton {
+  align-self: flex-end;
+  margin-left: auto;
+  cursor: pointer;
+}
+
+.songHandle {
+  display: flex;
+  width: 12px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  touch-action: none;
+  cursor: var(--cursor, pointer);
+  border-radius: 5px;
+  border: none;
+  outline: none;
+  appearance: none;
+  background-color: transparent;
+  -webkit-tap-highlight-color: transparent;
+  margin-right: auto;
+  padding-right: 15px;
+}
+
+.songHandle:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.songHandle:focus-visible {
+  box-shadow: 0 0px 0px 2px #4c9ffe;
+}
+
+.songHandle svg {
+  flex: 0 0 auto;
+  margin: auto;
+  height: 100%;
+  overflow: visible;
+  fill: #919eab;
+}

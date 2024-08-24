@@ -16,3 +16,12 @@
 .container > ol > li:hover {
     color: red;
 }
+
+.SortableList {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 0;
+    list-style: none;
+  }
+  
