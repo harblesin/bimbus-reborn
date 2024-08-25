@@ -36,7 +36,6 @@ client.once('ready', () => {
     
         player.on(AudioPlayerStatus.Playing, () => {
             console.log('The audio player has started playing!');
-            // const io = require("../server/server");
             getIO().emit('nowPlayingUpdate', { message: `Song has changed to: ${youtubeLinks[nowPlayingIndex].title}`, id: youtubeLinks[nowPlayingIndex].id });
         });
         player.on(AudioPlayerStatus.Idle, () => {
@@ -75,27 +74,25 @@ const webPlay = async (id) => {
 }
 
 const webPrev = () => {
-    const currentLinks = require('../server/links.json');
     if (nowPlayingIndex === 0) {
         nowPlayingIndex = youtubeLinks.length - 1;
     } else {
         nowPlayingIndex--
     }
-    currentResource = createResource(currentLinks[nowPlayingIndex].link, currentVolume);
+    currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
     player.play(currentResource);
-    console.log("Now playing: ", currentLinks[nowPlayingIndex].title)
+    console.log("Now playing: ", youtubeLinks[nowPlayingIndex].title)
 }
 
 const nextSong = () => {
-    const currentLinks = require('../server/links.json');
     if (nowPlayingIndex === youtubeLinks.length - 1) {
         nowPlayingIndex = 0;
     } else {
         nowPlayingIndex++
     }
-    currentResource = createResource(currentLinks[nowPlayingIndex].link, currentVolume);
+    currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
     player.play(currentResource);
-    console.log("Now playing: ", currentLinks[nowPlayingIndex].title)
+    console.log("Now playing: ", youtubeLinks[nowPlayingIndex].title)
 }
 
 const volumeDown = () => {
@@ -121,6 +118,10 @@ const getNowPlaying = () => {
     return nowPlayingIndex;
 }
 
+const updateLinks = (newList) => {
+    youtubeLinks = newList;
+}
+
 module.exports = {
     webPlay,
     webPause,
@@ -129,7 +130,8 @@ module.exports = {
     webResume,
     volumeUp,
     volumeDown,
-    getNowPlaying
+    getNowPlaying,
+    updateLinks
 }
 
 client.login(process.env.DISCORD_TOKEN);

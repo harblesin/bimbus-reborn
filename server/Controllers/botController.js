@@ -32,7 +32,6 @@ const deleteYoutube = async (req, res) => {
                 return 'Link Removed.'
             }
         });
-        // const io = require("../server");
         getIO().emit('songRemoved', { message: 'Song Removed.', updatedList: youtubeLinks });
         res.json({ message: 'Link Removed', newList: youtubeLinks });
     } catch (err) {
@@ -82,7 +81,6 @@ const addYoutubeLink = (req, res) => {
     let { link } = req.body;
     writeFile(link)
         .then(async result => {
-            // const io = require("../server");
             getIO().emit('songAdded', { message: 'Song Added.', updatedList: result });
             res.json(result);
         })
@@ -137,7 +135,7 @@ const updateOrder = (req, res) => {
     }
 
     updateLinks(list).then(async result => {
-        // const io = require("../server");
+        bot.updateLinks(list);
         getIO().emit('orderUpdate', { message: 'Song order updated.', updatedList: list });
         res.json(result);
     })
