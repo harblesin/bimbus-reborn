@@ -46,7 +46,7 @@ client.once('ready', () => {
             console.log('The audio player is paused!');
         })
 
-    }, 1000)
+    }, 2000)
 
 });
 
