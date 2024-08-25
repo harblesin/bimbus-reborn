@@ -23,41 +23,7 @@ let server = app.listen(PORT, () => {
 });
 const io = socketIO(server, { cors: { origin: "*" } });
 
-io.on("connection", (socket) => {
-
-
-    console.log("are we connected?")
-    // socket.on('songRemoved', (event) => {
-    //     socket.emit('songRemoved', { msg: 'Song Removed.' });
-    // })
-
-    // socket.on('updateAllLinks', (event) => {
-    //     socket.emit("updateAllLinks", { msg: `Updating All Links` })
-    // });
-
-    // socket.on('refreshLinks', (event) => {
-    //     socket.broadcast.emit("refreshLinks", { msg: `refresh` })
-    // });
-
-    // socket.on('changeNowPlaying', (event) => {
-    //     io.emit("changeNowPlaying", { ...event })
-    // });
-
-    // socket.on("prevSong", event => {
-    //     socket.broadcast.emit("prevSong", { ...event })
-    // });
-
-    // socket.on("nextSong", event => {
-    //     socket.broadcast.emit("nextSong", { ...event })
-    // });
-
-    // socket.on("requestingSongInfo", event => {
-    //     socket.broadcast.emit("requestingSongInfo", { ...event })
-    // });
-
-    // socket.on("sendingSongInfo", event => {
-    //     socket.broadcast.emit("sendingSongInfo", { ...event })
-    // });
-
+io.on("connection", () => {
+    console.log('Socket is now connected')
     module.exports = io;
 });
