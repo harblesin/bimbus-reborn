@@ -16,34 +16,37 @@ let nowPlayingIndex = 0;
 let currentVolume = .1;
 let currentResource = null;
 
-client.once('ready', async () => {
-    // Fetch the guild and channel
-    const guild = await client.guilds.fetch(process.env.DEFAULT_SERVER_ID);
-    const channel = await guild.channels.fetch(process.env.DEFAULT_CHANNEL_ID);
+client.once('ready', () => {
+    setTimeout( async () => {
+        // Fetch the guild and channel
+        const guild = await client.guilds.fetch(process.env.DEFAULT_SERVER_ID);
+        const channel = await guild.channels.fetch(process.env.DEFAULT_CHANNEL_ID);
+    
+        const connection = joinVoiceChannel({
+            channelId: process.env.DEFAULT_CHANNEL_ID,
+            guildId: process.env.DEFAULT_SERVER_ID,
+            adapterCreator: guild.voiceAdapterCreator
+        });
+    
+        connection.subscribe(player);
+        currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
+    
+        player.play(currentResource)
+    
+        player.on(AudioPlayerStatus.Playing, () => {
+            console.log('The audio player has started playing!');
+            const io = require("../server/server");
+            io.emit('nowPlayingUpdate', { message: `Song has changed to: ${youtubeLinks[nowPlayingIndex].title}`, id: youtubeLinks[nowPlayingIndex].id });
+        });
+        player.on(AudioPlayerStatus.Idle, () => {
+            console.log("The audio player is idle!");
+            nextSong();
+        });
+        player.on(AudioPlayerStatus.Paused, () => {
+            console.log('The audio player is paused!');
+        })
 
-    const connection = joinVoiceChannel({
-        channelId: process.env.DEFAULT_CHANNEL_ID,
-        guildId: process.env.DEFAULT_SERVER_ID,
-        adapterCreator: guild.voiceAdapterCreator
-    });
-
-    connection.subscribe(player);
-    currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
-
-    player.play(currentResource)
-
-    player.on(AudioPlayerStatus.Playing, () => {
-        console.log('The audio player has started playing!');
-        const io = require("../server/server");
-        io.emit('nowPlayingUpdate', { message: `Song has changed to: ${youtubeLinks[nowPlayingIndex].title}`, id: youtubeLinks[nowPlayingIndex].id });
-    });
-    player.on(AudioPlayerStatus.Idle, () => {
-        console.log("The audio player is idle!");
-        nextSong();
-    });
-    player.on(AudioPlayerStatus.Paused, () => {
-        console.log('The audio player is paused!');
-    })
+    }, 1000)
 
 });
 
