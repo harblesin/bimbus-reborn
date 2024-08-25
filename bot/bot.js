@@ -1,9 +1,8 @@
 require("dotenv").config();
 let youtubeLinks = require('../server/links.json');
 
-
 const { Client, GatewayIntentBits } = require('discord.js')
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, NoSubscriberBehavior, AudioPlayerStatus, StreamType } = require('@discordjs/voice');
+const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus } = require('@discordjs/voice');
 const { createResource } = require("./utils");
 const player = createAudioPlayer();
 const client = new Client({
@@ -33,13 +32,13 @@ client.once('ready', async () => {
 
     player.play(currentResource)
 
-
     player.on(AudioPlayerStatus.Playing, () => {
         console.log('The audio player has started playing!');
+        const io = require("../server/server");
+        io.emit('nowPlayingUpdate', { message: `Song has changed to: ${youtubeLinks[nowPlayingIndex].title}`, id: youtubeLinks[nowPlayingIndex].id });
     });
     player.on(AudioPlayerStatus.Idle, () => {
         console.log("The audio player is idle!");
-        // player.pause();
         nextSong();
     });
     player.on(AudioPlayerStatus.Paused, () => {
@@ -48,11 +47,7 @@ client.once('ready', async () => {
 
 });
 
-
-
-
 // WEB COMMANDS
-
 
 const webResume = async () => {
     player.unpause();
@@ -62,14 +57,15 @@ const webPause = () => {
     player.pause();
 }
 
-const webPlay = async (index) => {
+const webPlay = async (id) => {
     return new Promise(async (resolve, reject) => {
+        let index = youtubeLinks.map(link => link.id).indexOf(id);
         if (!youtubeLinks[index]) {
             return resolve(false);
         }
         nowPlayingIndex = index;
         currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
-        player.play(currentResource)
+        player.play(currentResource);
         return resolve(youtubeLinks[index]);
     })
 }
@@ -125,4 +121,4 @@ module.exports = {
     volumeDown
 }
 
-// client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN);

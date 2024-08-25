@@ -1,10 +1,8 @@
 const bot = require("../../bot/bot");
 const path = require('path');
-
 const fs = require('fs');
 let youtubeLinks = require('../links.json');
 const ytdl = require('@distube/ytdl-core');
-const io = require("../server");
 
 
 const play = (req, res) => {
@@ -13,19 +11,12 @@ const play = (req, res) => {
 }
 
 const getLinks = (req, res) => {
-    console.log('are we here???')
-
-    // return new Promise((resolve, reject) => {
-    //     let links = youtubeLinks;
-    //     return resolve(links);
-    // })
-
     res.json(youtubeLinks)
-
 }
 
 const playYoutube = async (req, res) => {
-    let song = await bot.webPlay(req.body.index);
+    let song = await bot.webPlay(req.body.id);
+    console.log('hello?')
     res.json(song);
 }
 
@@ -144,7 +135,9 @@ const updateOrder = (req, res) => {
         })
     }
 
-    updateLinks(list).then(result => {
+    updateLinks(list).then(async result => {
+        const io = require("../server");
+        await io.emit('orderUpdate', { message: 'Song order updated.', updatedList: list });
         res.json(result);
     })
         .catch(err => {

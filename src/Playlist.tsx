@@ -4,10 +4,17 @@ import InputContainer from "./Components/InputContainer.tsx";
 import axios from 'axios';
 import { SongList } from './Components/SongList.tsx';
 import { AiOutlineCloseSquare } from "react-icons/ai";
+import { LuSpeaker } from "react-icons/lu";
 import socket from './Socket/socket.js';
 
-
 export default function Playlist() {
+
+    const [songList, setSongList] = useState([]);
+    const [nowPlayingId, setNowPlayingId] = useState(null);
+
+    const playSong = (id) => {
+        axios.post('/api/bot/play/', { id: id });
+    }
 
     const removeSong = (id) => {
         axios.post('/api/bot/delete', { id: id }).then((result) => {
@@ -21,10 +28,11 @@ export default function Playlist() {
     }
 
     useEffect(() => {
+
         axios.get('/api/bot/links').then(result => {
             setSongList(result.data);
         });
-        
+
         socket.on('songAdded', (payload) => {
             console.log(payload.message);
             setSongList(payload.updatedList);
@@ -34,12 +42,17 @@ export default function Playlist() {
             console.log(payload.message);
             setSongList(payload.updatedList);
         });
+        socket.on('nowPlayingUpdate', (payload) => {
+            console.log(payload.message);
+            setNowPlayingId(payload.id);
+        });
 
-
+        socket.on('orderUpdate', (payload) => {
+            console.log(payload.message);
+            setSongList(payload.updatedList);
+        });
 
     }, []);
-
-    const [songList, setSongList] = useState([]);
 
     return (
         <div className={styles.background} >
@@ -52,7 +65,10 @@ export default function Playlist() {
                 renderItem={(item) => (
                     <SongList.Item id={item.id}>
                         <SongList.DragHandle id={item.id} />
-                        <span className={styles.songTitle}>{item.title}</span>
+                        <span className={styles.songTitle} onClick={() => playSong(item.id)}>{item.title}</span>
+                        <span className={styles.toolTipContainer}>
+                            {item.id === nowPlayingId ? (<><span className={styles.tooltip}>Now Playing</span><LuSpeaker className={styles.speakerIcon} /></>) : null}
+                        </span>
                         <AiOutlineCloseSquare onClick={() => removeSong(item.id)} className={styles.closeIcon} />
                     </SongList.Item>
                 )}
@@ -60,6 +76,5 @@ export default function Playlist() {
             <InputContainer />
         </div>
     );
-
 
 }
