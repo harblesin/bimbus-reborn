@@ -61,7 +61,7 @@ const addYoutubeLink = (req, res) => {
             }
             let linkInfo = await ytdl.getInfo(link);
             youtubeLinks.push({
-                id: youtubeLinks.length + 1,
+                id: youtubeLinks.title + 1,
                 title: linkInfo.player_response.videoDetails.title,
                 link: link,
                 image: linkInfo.player_response.videoDetails.thumbnail.thumbnails[0].url
