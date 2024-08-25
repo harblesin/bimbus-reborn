@@ -25,6 +25,7 @@ const deleteYoutube = async (req, res) => {
     const { id } = req.body;
     try {
         youtubeLinks = youtubeLinks.filter(link => link.id !== id);
+        bot.updateLinks();
         fs.writeFile(path.join(__dirname + `../links.json`), JSON.stringify(youtubeLinks), err => {
             if (err) {
                 return err
@@ -81,6 +82,7 @@ const addYoutubeLink = (req, res) => {
     let { link } = req.body;
     writeFile(link)
         .then(async result => {
+            bot.updateLinks();
             getIO().emit('songAdded', { message: 'Song Added.', updatedList: result });
             res.json(result);
         })
