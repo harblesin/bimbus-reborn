@@ -75,25 +75,27 @@ const webPlay = async (id) => {
 }
 
 const webPrev = () => {
+    const currentLinks = youtubeLinks;
     if (nowPlayingIndex === 0) {
         nowPlayingIndex = youtubeLinks.length - 1;
     } else {
         nowPlayingIndex--
     }
-    currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
+    currentResource = createResource(currentLinks[nowPlayingIndex].link, currentVolume);
     player.play(currentResource);
-    console.log("Now playing: ", youtubeLinks[nowPlayingIndex].title)
+    console.log("Now playing: ", currentLinks[nowPlayingIndex].title)
 }
 
 const nextSong = () => {
+    const currentLinks = youtubeLinks;
     if (nowPlayingIndex === youtubeLinks.length - 1) {
         nowPlayingIndex = 0;
     } else {
         nowPlayingIndex++
     }
-    currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
+    currentResource = createResource(currentLinks[nowPlayingIndex].link, currentVolume);
     player.play(currentResource);
-    console.log("Now playing: ", youtubeLinks[nowPlayingIndex].title)
+    console.log("Now playing: ", currentLinks[nowPlayingIndex].title)
 }
 
 const volumeDown = () => {
