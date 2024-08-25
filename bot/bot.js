@@ -134,4 +134,4 @@ module.exports = {
     updateLinks
 }
 
-// client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN);
