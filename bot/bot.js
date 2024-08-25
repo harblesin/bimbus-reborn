@@ -75,7 +75,7 @@ const webPlay = async (id) => {
 }
 
 const webPrev = () => {
-    const currentLinks = youtubeLinks;
+    const currentLinks = require('../server/links.json');
     if (nowPlayingIndex === 0) {
         nowPlayingIndex = youtubeLinks.length - 1;
     } else {
@@ -87,7 +87,7 @@ const webPrev = () => {
 }
 
 const nextSong = () => {
-    const currentLinks = youtubeLinks;
+    const currentLinks = require('../server/links.json');
     if (nowPlayingIndex === youtubeLinks.length - 1) {
         nowPlayingIndex = 0;
     } else {
