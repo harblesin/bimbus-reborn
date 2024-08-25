@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 let youtubeLinks = require('../links.json');
 const ytdl = require('@distube/ytdl-core');
+const { getIO } = require("../socketHandler");
 
 
 const play = (req, res) => {
@@ -30,8 +31,8 @@ const deleteYoutube = async (req, res) => {
                 return 'Link Removed.'
             }
         });
-        const io = require("../server");
-        await io.emit('songRemoved', { message: 'Song Removed.', updatedList: youtubeLinks });
+        // const io = require("../server");
+        getIO().emit('songRemoved', { message: 'Song Removed.', updatedList: youtubeLinks });
         res.json({ message: 'Link Removed', newList: youtubeLinks });
     } catch (err) {
         res.status(500).json({ error: err })
@@ -80,8 +81,8 @@ const addYoutubeLink = (req, res) => {
     let { link } = req.body;
     writeFile(link)
         .then(async result => {
-            const io = require("../server");
-            await io.emit('songAdded', { message: 'Song Added.', updatedList: result });
+            // const io = require("../server");
+            getIO().emit('songAdded', { message: 'Song Added.', updatedList: result });
             res.json(result);
         })
         .catch(err => {
@@ -135,8 +136,8 @@ const updateOrder = (req, res) => {
     }
 
     updateLinks(list).then(async result => {
-        const io = require("../server");
-        await io.emit('orderUpdate', { message: 'Song order updated.', updatedList: list });
+        // const io = require("../server");
+        getIO().emit('orderUpdate', { message: 'Song order updated.', updatedList: list });
         res.json(result);
     })
         .catch(err => {
