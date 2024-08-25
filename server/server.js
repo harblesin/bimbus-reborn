@@ -4,7 +4,7 @@ const app = express();
 const path = require('path');
 const PORT = process.env.NODE_SERVER_PORT;
 const router = require("./Routes");
-const socketIO = require("socket.io");
+const { initSocket } = require("./socketHandler");
 
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(express.json({ limit: '1mb' }));
@@ -21,9 +21,5 @@ app.get('*', (req, res) => {
 let server = app.listen(PORT, () => {
     console.log(`NODE server now on port ${PORT}`)
 });
-const io = socketIO(server, { cors: { origin: "*" } });
 
-io.on("connection", () => {
-    console.log('Socket is now connected')
-    module.exports = io;
-});
+initSocket(server);

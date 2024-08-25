@@ -16,7 +16,6 @@ const getLinks = (req, res) => {
 
 const playYoutube = async (req, res) => {
     let song = await bot.webPlay(req.body.id);
-    console.log('hello?')
     res.json(song);
 }
 

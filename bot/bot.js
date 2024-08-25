@@ -4,6 +4,7 @@ let youtubeLinks = require('../server/links.json');
 const { Client, GatewayIntentBits } = require('discord.js')
 const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus } = require('@discordjs/voice');
 const { createResource } = require("./utils");
+const { getIO } = require("../server/socketHandler");
 const player = createAudioPlayer();
 const client = new Client({
     intents: [
@@ -31,12 +32,12 @@ client.once('ready', () => {
         connection.subscribe(player);
         currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
     
-        player.play(currentResource)
+        player.play(currentResource);
     
         player.on(AudioPlayerStatus.Playing, () => {
             console.log('The audio player has started playing!');
-            const io = require("../server/server");
-            io.emit('nowPlayingUpdate', { message: `Song has changed to: ${youtubeLinks[nowPlayingIndex].title}`, id: youtubeLinks[nowPlayingIndex].id });
+            // const io = require("../server/server");
+            getIO().emit('nowPlayingUpdate', { message: `Song has changed to: ${youtubeLinks[nowPlayingIndex].title}`, id: youtubeLinks[nowPlayingIndex].id });
         });
         player.on(AudioPlayerStatus.Idle, () => {
             console.log("The audio player is idle!");
