@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styles from '../Styles/InputContainer.module.css';
 import axios from 'axios';
+import { LuStepBack, LuStepForward, LuPause, LuPlay, LuVolume1, LuVolume2 } from "react-icons/lu";
 
 
 const InputContainer = () => {
@@ -12,7 +13,8 @@ const InputContainer = () => {
             return;
         }
         axios.post('/api/bot/addlink', { link: link.trim() });
-        setLink('');    }
+        setLink('');
+    }
 
     const handleChange = (e: any) => {
         e.preventDefault();
@@ -25,18 +27,32 @@ const InputContainer = () => {
 
     return (
         <div className={styles.container}>
-            <label htmlFor="songName">Song</label>
-            <input id="songName" name='songName' value={link} onChange={handleChange} />
-            <button onClick={addLink}>Add</button>
             <div className={styles.controls}>
-                <button className={styles.controlButton} onClick={() => playerUpdate('prev')}>Back</button>
-                <button className={styles.controlButton} onClick={() => playerUpdate('pause')}>pause</button>
-                <button className={styles.controlButton} onClick={() => playerUpdate('resume')}>play</button>
-                <button className={styles.controlButton} onClick={() => playerUpdate('next')}>next</button>
+                <div>
+                    <label htmlFor="songName">Paste a song from youtube and hit add to add it to the playlist</label>
+                    <input id="songName" className={styles.input} name='songName' value={link} onChange={handleChange} />
+                    <button onClick={addLink}>Add</button>
+                </div>
+                <button className={styles.controlButton} onClick={() => playerUpdate('prev')}>
+                    <LuStepBack />
+                </button>
+                <button className={styles.controlButton} onClick={() => playerUpdate('pause')}>
+                    <LuPause />
+                </button>
+                <button className={styles.controlButton} onClick={() => playerUpdate('resume')}>
+                    <LuPlay />
+                </button>
+                <button className={styles.controlButton} onClick={() => playerUpdate('next')}>
+                    <LuStepForward />
+                </button>
                 {/* <button className={styles.controlButton}>stop</button> */}
-                <button className={styles.controlButton} onClick={() => playerUpdate('volumedown')}>Volume down</button>
-                <button className={styles.controlButton} onClick={() => playerUpdate('volumeup')}>voume up</button>
-                
+                <button className={styles.controlButton} onClick={() => playerUpdate('volumedown')}>
+                    <LuVolume1 />
+                </button>
+                <button className={styles.controlButton} onClick={() => playerUpdate('volumeup')}>
+                    <LuVolume2 />
+                </button>
+
             </div>
 
         </div>

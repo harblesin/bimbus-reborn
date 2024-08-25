@@ -96,10 +96,10 @@ const nextSong = () => {
 }
 
 const volumeDown = () => {
-    if (currentVolume < .05) {
+    if (currentVolume < .02) {
         return;
     }
-    currentVolume = currentVolume - .05;
+    currentVolume = currentVolume - .02;
     currentResource.volume.setVolume(currentVolume);
     console.log("Volume has been set to: ", currentVolume)
 }
@@ -109,7 +109,7 @@ const volumeUp = () => {
     if (currentVolume > .95) {
         return;
     }
-    currentVolume = currentVolume + .05;
+    currentVolume = currentVolume + .02;
     currentResource.volume.setVolume(currentVolume);
     console.log("Volume has been set to: ", currentVolume)
 }
@@ -134,4 +134,4 @@ module.exports = {
     updateLinks
 }
 
-client.login(process.env.DISCORD_TOKEN);
+// client.login(process.env.DISCORD_TOKEN);
