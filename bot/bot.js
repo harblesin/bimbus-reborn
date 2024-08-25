@@ -115,6 +115,10 @@ const volumeUp = () => {
     console.log("Volume has been set to: ", currentVolume)
 }
 
+const getNowPlaying = () => {
+    return nowPlayingIndex;
+}
+
 module.exports = {
     webPlay,
     webPause,
@@ -122,7 +126,8 @@ module.exports = {
     webPrev,
     webResume,
     volumeUp,
-    volumeDown
+    volumeDown,
+    getNowPlaying
 }
 
 client.login(process.env.DISCORD_TOKEN);

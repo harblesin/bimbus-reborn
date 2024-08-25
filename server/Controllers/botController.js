@@ -12,7 +12,8 @@ const play = (req, res) => {
 }
 
 const getLinks = (req, res) => {
-    res.json(youtubeLinks)
+    let nowPlayingIndex = bot.getNowPlaying();
+    res.json({ songList: youtubeLinks, id: youtubeLinks[nowPlayingIndex].id })
 }
 
 const playYoutube = async (req, res) => {

@@ -30,7 +30,8 @@ export default function Playlist() {
     useEffect(() => {
 
         axios.get('/api/bot/links').then(result => {
-            setSongList(result.data);
+            setSongList(result.data.songList);
+            setNowPlayingId(result.data.id);
         });
 
         socket.on('songAdded', (payload) => {
