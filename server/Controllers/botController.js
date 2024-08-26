@@ -1,19 +1,18 @@
 const bot = require("../../bot/bot");
-const path = require('path');
-const fs = require('fs');
-let youtubeLinks = require('../links.json');
 const ytdl = require('@distube/ytdl-core');
 const { getIO } = require("../socketHandler");
-
+const db = require('../Config/dbConfig.ts');
+const { fetchSongs } = require("../../bot/utils.js");
 
 const play = (req, res) => {
     bot.webPlaySong();
     res.end()
 }
 
-const getLinks = (req, res) => {
+const getLinks = async (req, res) => {
     let nowPlayingIndex = bot.getNowPlaying();
-    res.json({ songList: youtubeLinks, id: youtubeLinks[nowPlayingIndex].id })
+    const songs = await fetchSongs();
+    res.json({ songList: songs, id: songs[nowPlayingIndex].id })
 }
 
 const playYoutube = async (req, res) => {
@@ -24,21 +23,13 @@ const playYoutube = async (req, res) => {
 const deleteYoutube = async (req, res) => {
     const { id } = req.body;
     try {
-        youtubeLinks = youtubeLinks.filter(link => link.id !== id);
-        bot.updateLinks();
-        fs.writeFile(path.join(__dirname + `../links.json`), JSON.stringify(youtubeLinks), err => {
-            if (err) {
-                return err
-            } else {
-                return 'Link Removed.'
-            }
-        });
-        getIO().emit('songRemoved', { message: 'Song Removed.', updatedList: youtubeLinks });
-        res.json({ message: 'Link Removed', newList: youtubeLinks });
+        await db.query(`DELETE FROM links WHERE id = $1`, [id]);
+        const songs = await fetchSongs();
+        getIO().emit('songRemoved', { message: 'Song Removed.', updatedList: songs });
+        res.json({ message: 'Link Removed', newList: songs });
     } catch (err) {
         res.status(500).json({ error: err })
     }
-
 }
 
 const pauseYoutube = (req, res) => {
@@ -50,50 +41,41 @@ const resumeYoutube = (req, res) => {
     res.json(bot.webResume());
 }
 
-const addYoutubeLink = (req, res) => {
-
-    const writeFile = async (link) => {
-        return new Promise(async (resolve, reject) => {
-            let weGood = ytdl.validateURL(link);
-
-            if (!weGood) {
-                return reject('no');
-            }
-            let linkInfo = await ytdl.getInfo(link);
-            youtubeLinks.push({
-                id: youtubeLinks.length + 1,
-                title: linkInfo.player_response.videoDetails.title,
-                link: link,
-                image: linkInfo.player_response.videoDetails.thumbnail.thumbnails[0].url
-            });
-
-            let pathName = path.join(__dirname, `../links.json`);
-
-            fs.writeFile(pathName, JSON.stringify(youtubeLinks), (err) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(youtubeLinks);
-                }
-            });
-        })
-    }
+const addYoutubeLink = async (req, res) => {
 
     let { link } = req.body;
-    writeFile(link)
-        .then(async result => {
-            bot.updateLinks();
-            getIO().emit('songAdded', { message: 'Song Added.', updatedList: result });
-            res.json(result);
-        })
-        .catch(err => {
-            res.json(err);
-        });
+    let weGood = ytdl.validateURL(link);
 
+    if (!weGood) {
+        return reject('no');
+    }
+
+    try {
+        let linkInfo = await ytdl.getInfo(link);
+        let sqlString = `
+                    INSERT INTO links (title, link, image, position) 
+                    VALUES (
+                        $1, 
+                        $2, 
+                        $3, 
+                        CASE 
+                            WHEN (SELECT COUNT(*) FROM links) = 0 THEN 1 
+                            ELSE (SELECT COALESCE(MAX(position), 0) + 1 FROM links) 
+                        END
+                    );`;
+        let values = [linkInfo.player_response.videoDetails.title, link, linkInfo.player_response.videoDetails.thumbnail.thumbnails[0].url];
+        await db.query(sqlString, values);
+        const songs = await fetchSongs();
+        getIO().emit('songAdded', { message: 'Song Added.', updatedList: songs });
+        res.json(songs);
+    } catch (err) {
+        console.log(' we are the erro', err)
+        reject(err);
+    }
 }
 
 const playPrevYoutube = (req, res) => {
-    res.json(bot.webPrev());
+    res.json(bot.prevSong());
 }
 
 const playNextYoutube = (req, res) => {
@@ -102,12 +84,12 @@ const playNextYoutube = (req, res) => {
 
 const volumeDown = (req, res) => {
     bot.volumeDown();
-    res.json({});
+    res.json({ message: "Volume lowered."});
 }
 
 const volumeUp = (req, res) => {
     bot.volumeUp();
-    res.json({});
+    res.json({ message: "Volume increased."});
 }
 
 const stopYoutube = (req, res) => {
@@ -119,31 +101,23 @@ const shuffleYoutube = async (req, res) => {
     res.json(await bot.shuffleYoutube())
 }
 
-const updateOrder = (req, res) => {
+const updateOrder = async (req, res) => {
     const { list } = req.body;
-    let pathName = path.join(__dirname, `../links.json`);
+    let caseString = '';
+    list.forEach((l, i) => { caseString = caseString + ` WHEN id = ${l.id} THEN ${i + 1} ` });
 
-    const updateLinks = async (list) => {
-        return new Promise(async (resolve, reject) => {
+    const sqlString = `
+        UPDATE links
+        SET position = CASE
+                            ${caseString}
+                        END
+        WHERE id IN (${list.map(l => l.id).join(', ')})
+    `;
 
-            fs.writeFile(pathName, JSON.stringify(list), (err) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve('File appended.');
-                }
-            });
-        })
-    }
-
-    updateLinks(list).then(async result => {
-        bot.updateLinks(list);
-        getIO().emit('orderUpdate', { message: 'Song order updated.', updatedList: list });
-        res.json(result);
-    })
-        .catch(err => {
-            res.json(err);
-        });
+    await db.query(sqlString);
+    const songs = await fetchSongs();
+    getIO().emit('orderUpdate', { message: 'Song order updated.', updatedList: songs });
+    res.json(songs);
 }
 
 module.exports = {

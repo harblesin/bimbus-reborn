@@ -1,9 +1,9 @@
 require("dotenv").config();
-let youtubeLinks = require('../server/links.json');
+// let youtubeLinks = require('../server/links.json');
 
 const { Client, GatewayIntentBits } = require('discord.js')
 const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus } = require('@discordjs/voice');
-const { createResource } = require("./utils");
+const { createResource, fetchSongs } = require("./utils");
 const { getIO } = require("../server/socketHandler");
 const player = createAudioPlayer();
 const client = new Client({
@@ -30,13 +30,15 @@ client.once('ready', () => {
         });
     
         connection.subscribe(player);
-        currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
+        const songs = await fetchSongs();
+        currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
     
         player.play(currentResource);
     
-        player.on(AudioPlayerStatus.Playing, () => {
+        player.on(AudioPlayerStatus.Playing, async () => {
             console.log('The audio player has started playing!');
-            getIO().emit('nowPlayingUpdate', { message: `Song has changed to: ${youtubeLinks[nowPlayingIndex].title}`, id: youtubeLinks[nowPlayingIndex].id });
+            let songs = await fetchSongs();
+            getIO().emit('nowPlayingUpdate', { message: `Song has changed to: ${songs[nowPlayingIndex].title}`, id: songs[nowPlayingIndex].id });
         });
         player.on(AudioPlayerStatus.Idle, () => {
             console.log("The audio player is idle!");
@@ -62,37 +64,40 @@ const webPause = () => {
 
 const webPlay = async (id) => {
     return new Promise(async (resolve, reject) => {
-        let index = youtubeLinks.map(link => link.id).indexOf(id);
-        if (!youtubeLinks[index]) {
+        let songs = await fetchSongs();
+        let index = songs.map(link => link.id).indexOf(id);
+        if (!songs[index]) {
             return resolve(false);
         }
         nowPlayingIndex = index;
-        currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
+        currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
         player.play(currentResource);
-        return resolve(youtubeLinks[index]);
+        return resolve(songs[index]);
     })
 }
 
-const webPrev = () => {
+const prevSong = async () => {
+    let songs = await fetchSongs();
     if (nowPlayingIndex === 0) {
-        nowPlayingIndex = youtubeLinks.length - 1;
+        nowPlayingIndex = songs.length - 1;
     } else {
         nowPlayingIndex--
     }
-    currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
+    currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
     player.play(currentResource);
-    console.log("Now playing: ", youtubeLinks[nowPlayingIndex].title)
+    console.log("Now playing: ", songs[nowPlayingIndex].title)
 }
 
-const nextSong = () => {
-    if (nowPlayingIndex === youtubeLinks.length - 1) {
+const nextSong = async () => {
+    let songs = await fetchSongs();
+    if (nowPlayingIndex === songs.length - 1) {
         nowPlayingIndex = 0;
     } else {
         nowPlayingIndex++
     }
-    currentResource = createResource(youtubeLinks[nowPlayingIndex].link, currentVolume);
+    currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
     player.play(currentResource);
-    console.log("Now playing: ", youtubeLinks[nowPlayingIndex].title)
+    console.log("Now playing: ", songs[nowPlayingIndex].title)
 }
 
 const volumeDown = () => {
@@ -118,20 +123,15 @@ const getNowPlaying = () => {
     return nowPlayingIndex;
 }
 
-const updateLinks = (newList) => {
-    youtubeLinks = newList;
-}
-
 module.exports = {
     webPlay,
     webPause,
     nextSong,
-    webPrev,
+    prevSong,
     webResume,
     volumeUp,
     volumeDown,
-    getNowPlaying,
-    updateLinks
+    getNowPlaying
 }
 
 client.login(process.env.DISCORD_TOKEN);
