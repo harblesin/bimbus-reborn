@@ -14,9 +14,9 @@ import {
     sortableKeyboardCoordinates
 } from "@dnd-kit/sortable";
 
-import { SongOverlay } from "./SongOverlay.tsx";
+import { SongOverlay } from "./SongOverlay";
 import styles from '../Styles/SongList.module.css';
-import { SongHandle, SongItem } from './SongItem.tsx';
+import { SongHandle, SongItem } from './SongItem';
 
 interface BaseItem {
     id: UniqueIdentifier;

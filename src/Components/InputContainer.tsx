@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import styles from '../Styles/InputContainer.module.css';
 import axios from 'axios';
 import { LuStepBack, LuStepForward, LuPause, LuPlay, LuVolume1, LuVolume2 } from "react-icons/lu";

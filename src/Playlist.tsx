@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import styles from "./Styles/Playlist.module.css";
-import InputContainer from "./Components/InputContainer.tsx";
+import InputContainer from "./Components/InputContainer";
 import axios from 'axios';
-import { SongList } from './Components/SongList.tsx';
+import { SongList } from './Components/SongList';
 import { AiOutlineCloseSquare } from "react-icons/ai";
 import { LuSpeaker } from "react-icons/lu";
-import socket from './Socket/socket.js';
+import socket from './Socket/socket';
 
 export default function Playlist() {
 
@@ -17,14 +17,14 @@ export default function Playlist() {
     }
 
     const removeSong = (id) => {
-        axios.post('/api/bot/delete', { id: id }).then((result) => {
+        axios.post('/api/bot/delete', { id: id, oldList: songList }).then((result) => {
             setSongList(result.data.newList);
         });
     }
 
     const updateOrder = (list) => {
+        axios.post('/api/bot/order', { oldList: songList, list: list });
         setSongList(list);
-        axios.post('/api/bot/order', { list: list });
     }
 
     useEffect(() => {
@@ -65,7 +65,7 @@ export default function Playlist() {
                 onChange={updateOrder}
                 renderItem={(item) => (
                     <SongList.Item id={item.id}>
-                        <SongList.DragHandle id={item.id} />
+                        <SongList.DragHandle />
                         <span className={styles.songTitle} onClick={() => playSong(item.id)}>{item.title}</span>
                         <span className={styles.toolTipContainer}>
                             {item.id === nowPlayingId ? (<><span className={styles.tooltip}>Now Playing</span><LuSpeaker className={styles.speakerIcon} /></>) : null}

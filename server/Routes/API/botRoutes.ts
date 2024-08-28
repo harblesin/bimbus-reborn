@@ -1,10 +1,6 @@
-const router = require("express").Router();
-const botController = require("../../Controllers/botController");
-
-
-
-
-// router.route("/play").post(botController.play);
+import Router from "express";
+import botController from "../../Controllers/botController";
+const router = Router();
 
 router.route('/links').get(botController.getLinks);
 
@@ -32,6 +28,4 @@ router.route("/shuffle").get(botController.shuffleYoutube);
 
 router.route('/order').post(botController.updateOrder);
 
-
-
-module.exports = router;
+export default router;

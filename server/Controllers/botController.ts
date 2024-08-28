@@ -1,8 +1,8 @@
+import { getIO } from "../socketHandler";
 const bot = require("../../bot/bot");
 const ytdl = require('@distube/ytdl-core');
-const { getIO } = require("../socketHandler");
 const db = require('../Config/dbConfig.ts');
-const { fetchSongs } = require("../../bot/utils.js");
+const { fetchSongs } = require("../../bot/utils");
 
 const play = (req, res) => {
     bot.webPlaySong();
@@ -21,10 +21,11 @@ const playYoutube = async (req, res) => {
 }
 
 const deleteYoutube = async (req, res) => {
-    const { id } = req.body;
+    const { id, oldList } = req.body;
     try {
         await db.query(`DELETE FROM links WHERE id = $1`, [id]);
         const songs = await fetchSongs();
+        bot.updateNowPlayingIndex(oldList, songs);
         getIO().emit('songRemoved', { message: 'Song Removed.', updatedList: songs });
         res.json({ message: 'Link Removed', newList: songs });
     } catch (err) {
@@ -47,7 +48,7 @@ const addYoutubeLink = async (req, res) => {
     let weGood = ytdl.validateURL(link);
 
     if (!weGood) {
-        return reject('no');
+        return res.status(500).json('no');
     }
 
     try {
@@ -70,7 +71,7 @@ const addYoutubeLink = async (req, res) => {
         res.json(songs);
     } catch (err) {
         console.log(' we are the erro', err)
-        reject(err);
+        res.status(500).json(err);
     }
 }
 
@@ -102,7 +103,7 @@ const shuffleYoutube = async (req, res) => {
 }
 
 const updateOrder = async (req, res) => {
-    const { list } = req.body;
+    const { list, oldList } = req.body;
     let caseString = '';
     list.forEach((l, i) => { caseString = caseString + ` WHEN id = ${l.id} THEN ${i + 1} ` });
 
@@ -116,11 +117,12 @@ const updateOrder = async (req, res) => {
 
     await db.query(sqlString);
     const songs = await fetchSongs();
+    bot.updateNowPlayingIndex(oldList, songs);
     getIO().emit('orderUpdate', { message: 'Song order updated.', updatedList: songs });
     res.json(songs);
 }
 
-module.exports = {
+const botController = {
     play,
     getLinks,
     playYoutube,
@@ -135,4 +137,6 @@ module.exports = {
     stopYoutube,
     shuffleYoutube,
     updateOrder
-}
+};
+
+export default botController;

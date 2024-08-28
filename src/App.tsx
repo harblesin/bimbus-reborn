@@ -1,5 +1,5 @@
 import './App.css';
-import Playlist from './Playlist.tsx';
+import Playlist from './Playlist';
 
 function App() {
   return (
