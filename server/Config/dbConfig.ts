@@ -5,7 +5,7 @@ const db: any = new pgClient({
   user: PGUSER,
   password: PGPASSWORD,
   host: PGHOST,
-  port: PGPORT,
+  port: Number(PGPORT),
   database: DATABASE,
 });
 
