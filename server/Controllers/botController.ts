@@ -93,7 +93,7 @@ const volumeUp = (req: any, res: any) => {
     res.json({ message: "Volume increased." });
 }
 
-const stopYoutube = (req, res) => {
+const stopYoutube = (req: any, res: any) => {
     bot.youtubeStop();
     res.end();
 }
