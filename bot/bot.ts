@@ -15,10 +15,10 @@ const client = new Client({
 });
 let nowPlayingIndex = 0;
 let currentVolume = .1;
-let currentResource = null;
+let currentResource: any = null;
 let webPlayerIsPaused = false;
 
-let guild;
+let guild: any;
 
 client.once('ready', async () => {
     // Fetch the guild and channel
@@ -48,7 +48,7 @@ client.once('ready', async () => {
 
 
     connection.on('stateChange', stateChangeLogger('Connection'))
-    
+
     player.play(currentResource);
     player.on('stateChange', stateChangeLogger('Player'))
     player.on(AudioPlayerStatus.Playing, async () => {
@@ -61,22 +61,22 @@ client.once('ready', async () => {
     });
     player.on(AudioPlayerStatus.Paused, () => {
     });
-    player.on('error', error => {
+    player.on('error', (error: any) => {
         console.warn(`Error: ${error.message} with resource ${error}`);
         nextSong();
     });
 
 });
 
-client.on('voiceStateUpdate', (oldState, newState) => {
-    if(!newState.channel){
+client.on('voiceStateUpdate', (oldState: any, newState: any) => {
+    if (!newState.channel) {
         return;
     }
-    const botAccount = guild.members.cache.get(client.user.id);
+    const botAccount: any = guild.members.cache.get(client.user.id);
     const currentChannel = botAccount.voice.channel.id;
 
-    if(oldState.channel?.id !== currentChannel){
-        if(newState.channel?.id !== currentChannel){
+    if (oldState.channel?.id !== currentChannel) {
+        if (newState.channel?.id !== currentChannel) {
             return;
         } else if (player.state.status === AudioPlayerStatus.Paused && newState.channel.members.size > 1 && !webPlayerIsPaused) {
             logWrapper('Client', 'New User connected. Resuming Bimbus...')
@@ -86,9 +86,9 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     } else if (newState.channel.members.size < 2) {
         logWrapper('Client', 'No other users detected in channel. Pausing Bimbus...')
         player.pause();
-    } 
+    }
 
-    if(newState.channel?.id !== currentChannel){
+    if (newState.channel?.id !== currentChannel) {
         return;
     } else if (player.state.status === AudioPlayerStatus.Paused && newState.channel.members.size > 1 && !webPlayerIsPaused) {
         logWrapper('Client', 'New User connected. Resuming Bimbus...')
@@ -107,10 +107,10 @@ const webPause = () => {
     player.pause();
 }
 
-const webPlay = async (id) => {
+const webPlay = async (id: any) => {
     return new Promise(async (resolve, reject) => {
         let songs = await fetchSongs();
-        let index = songs.map(link => link.id).indexOf(id);
+        let index = songs.map((link: any) => link.id).indexOf(id);
         if (!songs[index]) {
             return resolve(false);
         }
@@ -166,9 +166,9 @@ const getNowPlaying = () => {
     return nowPlayingIndex;
 }
 
-const updateNowPlayingIndex = (oldList, updatedList) => {
+const updateNowPlayingIndex = (oldList: any, updatedList: any) => {
     let nowPlayingId = oldList[nowPlayingIndex].id;
-    nowPlayingIndex = updatedList.map(l => l.id).findIndex(nowPlayingId);
+    nowPlayingIndex = updatedList.map((l: any) => l.id).findIndex(nowPlayingId);
 }
 
 module.exports = {
