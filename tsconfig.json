@@ -12,7 +12,8 @@
     /* Type Checking */
     "skipLibCheck": true,      
     "outDir": "./dist",        
-    "noImplicitAny": false                 /* Skip type checking all .d.ts files. */
+    "noImplicitAny": false,
+    "strict": false           /* Skip type checking all .d.ts files. */
   },
   "include": ["src/**/*", "declaration.d.ts"],
   "exclude": [
