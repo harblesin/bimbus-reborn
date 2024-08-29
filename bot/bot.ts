@@ -25,11 +25,7 @@ client.once('ready', async () => {
     guild = await client.guilds.fetch(process.env.DEFAULT_SERVER_ID);
     const channel = await guild.channels.fetch(process.env.DEFAULT_CHANNEL_ID);
 
-
-    console.log(`------------------------------------------------`);
-    console.log(`Bimbus has successfully logged into discord server: ${guild}!`);
-    console.log(`------------------------------------------------`);
-
+    logWrapper('Client', `Bimbus has successfully logged into discord server: ${guild}!`)
 
     const connection = joinVoiceChannel({
         debuge: process.env.NODE_ENV === 'development' ? true : false,
@@ -38,14 +34,11 @@ client.once('ready', async () => {
         adapterCreator: guild.voiceAdapterCreator
     });
 
-    console.log(`------------------------------------------------`);
-    console.log(`Bimbus joined discord channel: ${channel}!`);
-    console.log(`------------------------------------------------`);
+    logWrapper('Client', `Bimbus joined discord channel: ${channel}`)
 
     connection.subscribe(player);
     const songs = await fetchSongs();
     currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
-
 
     connection.on('stateChange', stateChangeLogger('Connection'))
 
@@ -69,9 +62,6 @@ client.once('ready', async () => {
 });
 
 client.on('voiceStateUpdate', (oldState: any, newState: any) => {
-    if (!newState.channel) {
-        return;
-    }
     const botAccount: any = guild.members.cache.get(client.user.id);
     const currentChannel = botAccount.voice.channel.id;
 
@@ -82,8 +72,7 @@ client.on('voiceStateUpdate', (oldState: any, newState: any) => {
             logWrapper('Client', 'New User connected. Resuming Bimbus...')
             player.unpause();
         }
-        return;
-    } else if (newState.channel.members.size < 2) {
+    } else if ((!newState.channel || newState.channel.members.size < 2) && oldState.channel?.id === currentChannel) {
         logWrapper('Client', 'No other users detected in channel. Pausing Bimbus...')
         player.pause();
     }
@@ -94,7 +83,6 @@ client.on('voiceStateUpdate', (oldState: any, newState: any) => {
         logWrapper('Client', 'New User connected. Resuming Bimbus...')
         player.unpause();
     }
-
 })
 
 // WEB COMMANDS
