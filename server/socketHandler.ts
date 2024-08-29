@@ -1,8 +1,8 @@
 const socketIO = require('socket.io')
 
-let io;
+let io: any;
 
-export const initSocket = (server) => {
+export const initSocket = (server: any) => {
     io = socketIO(server, { cors: { origin: "*"}});
 
     io.on('connection', () => {
