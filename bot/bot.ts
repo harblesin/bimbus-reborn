@@ -1,8 +1,5 @@
-import { getBuiltinModule } from "process";
-// import { logWrapper } from "./utils";
 
 require("dotenv").config();
-// let youtubeLinks = require('../server/links.json');
 
 const { Client, GatewayIntentBits } = require('discord.js')
 const { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus } = require('@discordjs/voice');
@@ -56,21 +53,15 @@ client.once('ready', async () => {
     player.on('stateChange', stateChangeLogger('Player'))
     player.on(AudioPlayerStatus.Playing, async () => {
         let songs = await fetchSongs();
-        // let sur = logWrapper('e','e');
-        // console.info(`${sur}`)
-        logWrapper('one', 'two')
-        // console.info(`[${process.pid}][${nowToString}][Player][Now Playing->${songs[nowPlayingIndex].title}]`);
+        logWrapper('Player', `Now Playing: ${songs[nowPlayingIndex].title}`)
         getIO().emit('nowPlayingUpdate', { message: `Song has changed to: ${songs[nowPlayingIndex].title}`, id: songs[nowPlayingIndex].id });
     });
     player.on(AudioPlayerStatus.Idle, () => {
-        // stateChangeLogger('Player');
         nextSong();
     });
     player.on(AudioPlayerStatus.Paused, () => {
-        // stateChangeLogger('Player');
     });
     player.on('error', error => {
-        // stateChangeLogger('Player');
         console.warn(`Error: ${error.message} with resource ${error}`);
         nextSong();
     });
@@ -81,26 +72,29 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     if(!newState.channel){
         return;
     }
-
-    // if(!oldState.channel){
-    //     return;
-    // }
-    const now = new Date();
-    const nowToString = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
     const botAccount = guild.members.cache.get(client.user.id);
     const currentChannel = botAccount.voice.channel.id;
+
     if(oldState.channel?.id !== currentChannel){
         if(newState.channel?.id !== currentChannel){
             return;
         } else if (player.state.status === AudioPlayerStatus.Paused && newState.channel.members.size > 1 && !webPlayerIsPaused) {
-            console.info(`[${process.pid}][${nowToString}][Client][New User connected. Resuming Bimbus...]`);
+            logWrapper('Client', 'New User connected. Resuming Bimbus...')
             player.unpause();
         }
         return;
     } else if (newState.channel.members.size < 2) {
-        console.info(`[${process.pid}][${nowToString}][Client][No other users detected in channel. Pausing Bimbus...]`);
+        logWrapper('Client', 'No other users detected in channel. Pausing Bimbus...')
         player.pause();
     } 
+
+    if(newState.channel?.id !== currentChannel){
+        return;
+    } else if (player.state.status === AudioPlayerStatus.Paused && newState.channel.members.size > 1 && !webPlayerIsPaused) {
+        logWrapper('Client', 'New User connected. Resuming Bimbus...')
+        player.unpause();
+    }
+
 })
 
 // WEB COMMANDS
@@ -136,7 +130,6 @@ const prevSong = async () => {
     }
     currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
     player.play(currentResource);
-    console.log("Now playing: ", songs[nowPlayingIndex].title)
 }
 
 const nextSong = async () => {
@@ -148,7 +141,6 @@ const nextSong = async () => {
     }
     currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
     player.play(currentResource);
-    console.log("Now playing: ", songs[nowPlayingIndex].title)
 }
 
 const volumeDown = () => {
@@ -157,7 +149,7 @@ const volumeDown = () => {
     }
     currentVolume = currentVolume - .02;
     currentResource.volume.setVolume(currentVolume);
-    console.log("Volume has been set to: ", currentVolume)
+    logWrapper('Resource', `Volume has been set to: ${currentVolume}`)
 }
 
 
@@ -167,7 +159,7 @@ const volumeUp = () => {
     }
     currentVolume = currentVolume + .02;
     currentResource.volume.setVolume(currentVolume);
-    console.log("Volume has been set to: ", currentVolume)
+    logWrapper('Resource', `Volume has been set to: ${currentVolume}`);
 }
 
 const getNowPlaying = () => {
