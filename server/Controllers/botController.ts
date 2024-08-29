@@ -4,23 +4,23 @@ const ytdl = require('@distube/ytdl-core');
 const db = require('../Config/dbConfig.ts');
 const { fetchSongs } = require("../../bot/utils");
 
-const play = (req, res) => {
+const play = (req: any, res: any) => {
     bot.webPlaySong();
     res.end()
 }
 
-const getLinks = async (req, res) => {
+const getLinks = async (req: any, res: any) => {
     let nowPlayingIndex = bot.getNowPlaying();
     const songs = await fetchSongs();
     res.json({ songList: songs, id: songs[nowPlayingIndex].id })
 }
 
-const playYoutube = async (req, res) => {
+const playYoutube = async (req: any, res: any) => {
     let song = await bot.webPlay(req.body.id);
     res.json(song);
 }
 
-const deleteYoutube = async (req, res) => {
+const deleteYoutube = async (req: any, res: any) => {
     const { id, oldList } = req.body;
     try {
         await db.query(`DELETE FROM links WHERE id = $1`, [id]);
@@ -33,16 +33,16 @@ const deleteYoutube = async (req, res) => {
     }
 }
 
-const pauseYoutube = (req, res) => {
+const pauseYoutube = (req: any, res: any) => {
     bot.webPause();
     res.end();
 }
 
-const resumeYoutube = (req, res) => {
+const resumeYoutube = (req: any, res: any) => {
     res.json(bot.webResume());
 }
 
-const addYoutubeLink = async (req, res) => {
+const addYoutubeLink = async (req: any, res: any) => {
 
     let { link } = req.body;
     let weGood = ytdl.validateURL(link);
@@ -75,22 +75,22 @@ const addYoutubeLink = async (req, res) => {
     }
 }
 
-const playPrevYoutube = (req, res) => {
+const playPrevYoutube = (req: any, res: any) => {
     res.json(bot.prevSong());
 }
 
-const playNextYoutube = (req, res) => {
+const playNextYoutube = (req: any, res: any) => {
     res.json(bot.nextSong());
 }
 
-const volumeDown = (req, res) => {
+const volumeDown = (req: any, res: any) => {
     bot.volumeDown();
-    res.json({ message: "Volume lowered."});
+    res.json({ message: "Volume lowered." });
 }
 
-const volumeUp = (req, res) => {
+const volumeUp = (req: any, res: any) => {
     bot.volumeUp();
-    res.json({ message: "Volume increased."});
+    res.json({ message: "Volume increased." });
 }
 
 const stopYoutube = (req, res) => {
@@ -98,21 +98,21 @@ const stopYoutube = (req, res) => {
     res.end();
 }
 
-const shuffleYoutube = async (req, res) => {
+const shuffleYoutube = async (req: any, res: any) => {
     res.json(await bot.shuffleYoutube())
 }
 
-const updateOrder = async (req, res) => {
+const updateOrder = async (req: any, res: any) => {
     const { list, oldList } = req.body;
     let caseString = '';
-    list.forEach((l, i) => { caseString = caseString + ` WHEN id = ${l.id} THEN ${i + 1} ` });
+    list.forEach((l: any, i: any) => { caseString = caseString + ` WHEN id = ${l.id} THEN ${i + 1} ` });
 
     const sqlString = `
         UPDATE links
         SET position = CASE
                             ${caseString}
                         END
-        WHERE id IN (${list.map(l => l.id).join(', ')})
+        WHERE id IN (${list.map((l: any) => l.id).join(', ')})
     `;
 
     await db.query(sqlString);
