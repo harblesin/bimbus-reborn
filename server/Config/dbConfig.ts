@@ -1,7 +1,7 @@
-import { Client as pgClient } from 'pg';
+import { Pool } from 'pg';
 const { DATABASE, PGUSER, PGPASSWORD, PGHOST, PGPORT } = process.env;
 
-const db: any = new pgClient({
+const db: any = new Pool({
   user: PGUSER,
   password: PGPASSWORD,
   host: PGHOST,
