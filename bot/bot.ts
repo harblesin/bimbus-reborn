@@ -166,9 +166,21 @@ const getNowPlaying = () => {
     return nowPlayingIndex;
 }
 
-const updateNowPlayingIndex = (oldList: any, updatedList: any) => {
+const updateNowPlayingIndex = async (oldList: any, updatedList: any) => {
     let nowPlayingId = oldList[nowPlayingIndex].id;
-    nowPlayingIndex = updatedList.map((l: any) => l.id).findIndex(nowPlayingId);
+    let newIndex = updatedList.map((l: any) => l.id).findIndex((i: any) => i === nowPlayingId);
+    if (newIndex < 0) {
+        let songs = await fetchSongs();
+        const idMap = oldList.map((song: any) => song.id);
+        const lastItemId = oldList.at(-1).id;
+        if (nowPlayingIndex === idMap.indexOf(lastItemId)) {
+            nowPlayingIndex = 0;
+        }
+        currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
+        player.play(currentResource);
+    } else {
+        nowPlayingIndex = newIndex;
+    }
 }
 
 module.exports = {
