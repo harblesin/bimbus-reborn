@@ -28,8 +28,6 @@ const InputContainer = (props: any) => {
         axios.get(`/api/bot/${type}`);
     }
 
-    // useEffect( )
-
     return (
         <div className={styles.container}>
             <div className={styles.controls}>

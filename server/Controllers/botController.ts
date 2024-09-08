@@ -11,8 +11,9 @@ const play = (req: any, res: any) => {
 
 const getLinks = async (req: any, res: any) => {
     let nowPlayingIndex = bot.getNowPlaying();
+    let shuffle = bot.getShuffle();
     const songs = await fetchSongs();
-    res.json({ songList: songs, id: songs[nowPlayingIndex].id })
+    res.json({ songList: songs, id: songs[nowPlayingIndex].id, shuffle: shuffle });
 }
 
 const playYoutube = async (req: any, res: any) => {

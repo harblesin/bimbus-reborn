@@ -33,6 +33,7 @@ export default function Playlist() {
         axios.get('/api/bot/links').then(result => {
             setSongList(result.data.songList);
             setNowPlayingId(result.data.id);
+            setShuffle(result.data.shuffle);
         });
 
         socket.on('songAdded', (payload) => {
