@@ -185,6 +185,10 @@ const setShuffle = () => {
     getIO().emit('shuffleUpdate', { message: `Shuffle value has been updated.`, shuffle: shuffle });
 }
 
+const getShuffle = () => {
+    return shuffle;
+}
+
 module.exports = {
     webPlay,
     webPause,
@@ -195,7 +199,8 @@ module.exports = {
     volumeDown,
     getNowPlaying,
     updateNowPlayingIndex,
-    setShuffle
+    setShuffle,
+    getShuffle
 }
 
 client.login(process.env.DISCORD_TOKEN);
