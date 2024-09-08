@@ -55,7 +55,6 @@ export default function Playlist() {
         });
 
         socket.on('shuffleUpdate', (payload) => {
-            console.log(payload.message);
             setShuffle(payload.shuffle);
         })
 

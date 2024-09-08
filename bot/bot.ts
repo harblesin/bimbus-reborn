@@ -181,7 +181,8 @@ const updateNowPlayingIndex = async (oldList: any, updatedList: any) => {
 
 const setShuffle = () => {
     shuffle = !shuffle;
-    getIO().emit('nowPlayingUpdate', { message: `Shuffle value has been updated.`, shuffle: shuffle });
+    console.log(shuffle)
+    getIO().emit('shuffleUpdate', { message: `Shuffle value has been updated.`, shuffle: shuffle });
 }
 
 module.exports = {
