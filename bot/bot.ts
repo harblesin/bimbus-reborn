@@ -17,6 +17,7 @@ let nowPlayingIndex = 0;
 let currentVolume = .1;
 let currentResource: any = null;
 let webPlayerIsPaused = false;
+let shuffle = false;
 
 let guild: any;
 
@@ -63,35 +64,33 @@ client.once('ready', async () => {
 
 client.on('voiceStateUpdate', (oldState: any, newState: any) => {
     const botAccount: any = guild.members.cache.get(client.user.id);
-    const currentChannel = botAccount.voice.channel.id;
+    const botChannelSize = botAccount.voice.channel.members.size;
 
-    if (oldState.channel?.id !== currentChannel) {
-        if (newState.channel?.id !== currentChannel) {
-            return;
-        } else if (player.state.status === AudioPlayerStatus.Paused && newState.channel.members.size > 1 && !webPlayerIsPaused) {
-            logWrapper('Client', 'New User connected. Resuming Bimbus...')
-            player.unpause();
-        }
-    } else if ((!newState.channel || newState.channel.members.size < 2) && oldState.channel?.id === currentChannel) {
-        logWrapper('Client', 'No other users detected in channel. Pausing Bimbus...')
-        player.pause();
+    if (webPlayerIsPaused) {
+        return;
     }
 
-    if (newState.channel?.id !== currentChannel) {
-        return;
-    } else if (player.state.status === AudioPlayerStatus.Paused && newState.channel.members.size > 1 && !webPlayerIsPaused) {
+    if (botChannelSize > 1 && player.state.status === AudioPlayerStatus.Paused) {
         logWrapper('Client', 'New User connected. Resuming Bimbus...')
         player.unpause();
+    } else if (botChannelSize < 2 && player.state.status === AudioPlayerStatus.Playing) {
+        logWrapper('Client', 'No other users detected in channel. Pausing Bimbus...')
+        player.pause();
+    } else {
+        return;
     }
+
 })
 
 // WEB COMMANDS
 
 const webResume = async () => {
+    webPlayerIsPaused = false;
     player.unpause();
 }
 
 const webPause = () => {
+    webPlayerIsPaused = true;
     player.pause();
 }
 
@@ -111,10 +110,14 @@ const webPlay = async (id: any) => {
 
 const prevSong = async () => {
     let songs = await fetchSongs();
-    if (nowPlayingIndex === 0) {
-        nowPlayingIndex = songs.length - 1;
+    if (shuffle) {
+        nowPlayingIndex = Math.floor(Math.random() * songs.length);
     } else {
-        nowPlayingIndex--
+        if (nowPlayingIndex === 0) {
+            nowPlayingIndex = songs.length - 1;
+        } else {
+            nowPlayingIndex--
+        }
     }
     currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
     player.play(currentResource);
@@ -122,10 +125,15 @@ const prevSong = async () => {
 
 const nextSong = async () => {
     let songs = await fetchSongs();
-    if (nowPlayingIndex === songs.length - 1) {
-        nowPlayingIndex = 0;
+
+    if (shuffle) {
+        nowPlayingIndex = Math.floor(Math.random() * songs.length);
     } else {
-        nowPlayingIndex++
+        if (nowPlayingIndex === songs.length - 1) {
+            nowPlayingIndex = 0;
+        } else {
+            nowPlayingIndex++
+        }
     }
     currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
     player.play(currentResource);
@@ -171,6 +179,10 @@ const updateNowPlayingIndex = async (oldList: any, updatedList: any) => {
     }
 }
 
+const setShuffle = () => {
+    shuffle = !shuffle;
+}
+
 module.exports = {
     webPlay,
     webPause,
@@ -180,7 +192,8 @@ module.exports = {
     volumeUp,
     volumeDown,
     getNowPlaying,
-    updateNowPlayingIndex
+    updateNowPlayingIndex,
+    setShuffle
 }
 
 client.login(process.env.DISCORD_TOKEN);

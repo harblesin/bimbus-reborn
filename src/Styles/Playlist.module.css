@@ -9,10 +9,18 @@
 }
 
 .header {
-    font-family: fantasy;
-    font-weight: 300;
+    font-family: 'Fira Sans', sans-serif;
+    font-weight: 800;
     font-size: 40px;
-    text-shadow: 0px 4px 14px lightpink;
+    text-shadow:
+        0 0 5px #FFF,
+        0 0 10px #FFF,
+        0 0 15px #FFF,
+        0 0 20px #e43799,
+        0 0 30px #f17ae1,
+        0 0 40px #fa86e3,
+        0 0 55px #e6a2ee,
+        0 0 75px #f8bbff;
 }
 
 .closeIcon {
@@ -20,7 +28,7 @@
     padding-left: 15px;
 }
 
-@keyframes example {
+@keyframes bigSmall {
     0% {
         transform: scale(1);
     }
@@ -51,11 +59,12 @@
 }
 
 .speakerIcon {
-    animation: example 4s infinite ease-in-out;
+    animation: bigSmall 4s infinite ease-in-out;
     margin-top: 2px;
     margin-left: 10px;
 }
-.toolTipContainer{
+
+.toolTipContainer {
     position: relative;
 }
 
@@ -63,9 +72,9 @@
     opacity: 0;
     position: absolute;
     width: 100px;
-    font-family:monospace;
+    font-family: monospace;
     font-weight: 800;
-    color:rgb(65, 51, 51);
+    color: rgb(65, 51, 51);
     background-color: rgb(226, 226, 226);
     border-radius: 20px;
     padding: 5px;
@@ -73,10 +82,12 @@
     left: -35px;
     box-shadow: 1px 2px 7px rgb(49, 49, 49);
     transition: all .2s ease-in;
+    z-index: 999;
 }
 
 .toolTipContainer:hover .tooltip {
     opacity: 1;
+    z-index: 999;
 }
 
 .closeIcon:hover {
@@ -85,7 +96,7 @@
 }
 
 .songTitle {
-    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif   ;
+    font-family: 'Fira Sans', sans-serif;
 }
 
 .songTitle:hover {

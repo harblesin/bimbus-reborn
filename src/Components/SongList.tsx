@@ -26,12 +26,14 @@ interface Props<T extends BaseItem> {
     items: T[];
     onChange(items: T[]): void;
     renderItem(item: T): ReactNode;
+    nowPlayingId: number;
 }
 
 export function SongList<T extends BaseItem>({
     items,
     onChange,
-    renderItem
+    renderItem,
+    nowPlayingId
 }: Props<T>) {
     const [active, setActive] = useState<Active | null>(null);
     const activeItem = useMemo(
@@ -46,35 +48,37 @@ export function SongList<T extends BaseItem>({
     );
 
     return (
-        <DndContext
-            sensors={sensors}
-            onDragStart={({ active }) => {
-                setActive(active);
-            }}
-            onDragEnd={({ active, over }) => {
-                if (over && active.id !== over?.id) {
-                    const activeIndex = items.findIndex(({ id }) => id === active.id);
-                    const overIndex = items.findIndex(({ id }) => id === over.id);
+        <div className={styles.container}>
+            <DndContext
+                sensors={sensors}
+                onDragStart={({ active }) => {
+                    setActive(active);
+                }}
+                onDragEnd={({ active, over }) => {
+                    if (over && active.id !== over?.id) {
+                        const activeIndex = items.findIndex(({ id }) => id === active.id);
+                        const overIndex = items.findIndex(({ id }) => id === over.id);
 
-                    onChange(arrayMove(items, activeIndex, overIndex));
-                }
-                setActive(null);
-            }}
-            onDragCancel={() => {
-                setActive(null);
-            }}
-        >
-            <SortableContext items={items}>
-                <ul className={styles.SortableList} role="application">
-                    {items.map((item) => (
-                        <React.Fragment key={item.id}>{renderItem(item)}</React.Fragment>
-                    ))}
-                </ul>
-            </SortableContext>
-            <SongOverlay>
-                {activeItem ? renderItem(activeItem) : null}
-            </SongOverlay>
-        </DndContext>
+                        onChange(arrayMove(items, activeIndex, overIndex));
+                    }
+                    setActive(null);
+                }}
+                onDragCancel={() => {
+                    setActive(null);
+                }}
+            >
+                <SortableContext items={items}>
+                    <ul className={styles.SortableList} role="application">
+                        {items.map((item) => (
+                            <span key={item.id} className={nowPlayingId === item.id ? styles.nowPlaying : null}>{renderItem(item)}</span>
+                        ))}
+                    </ul>
+                </SortableContext>
+                <SongOverlay>
+                    {activeItem ? renderItem(activeItem) : null}
+                </SongOverlay>
+            </DndContext>
+        </div>
     );
 }
 

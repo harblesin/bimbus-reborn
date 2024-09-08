@@ -1,20 +1,14 @@
 .container {
-    height: 100px;
-    border: 2px dashed lightblue;
-    max-width: 70%;
+    height: 70vh;
     width: fit-content;
-    padding: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.container > ol > li {
-    cursor: pointer;
-}
-
-.container > ol > li:hover {
-    color: red;
+    overflow-y: scroll;
+    padding: 0px 20px 0px 20px;
+    scrollbar-color: cyan darkcyan;
+    scrollbar-width: thin;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    border: inset rgb(110, 203, 203) 3px;
+    box-shadow: inset 6px 6px 10px 0 rgba(0, 0, 0, 0.2), inset -6px -6px 10px 0 rgba(88, 74, 74, 0.5);
 }
 
 .SortableList {
@@ -23,5 +17,27 @@
     gap: 5px;
     padding: 0;
     list-style: none;
-  }
-  
+}
+
+.nowPlaying {
+    animation: nowPlayingHighlight 8s infinite ease;
+    color:white
+}
+
+@keyframes nowPlayingHighlight {
+    0% {
+        background-color: rgb(156, 12, 149);
+        box-shadow: inset 6px 6px 10px 0 rgba(255, 0, 0, 0.2), inset -6px -6px 10px 0 rgba(236, 10, 10, 0.5);
+    }
+
+    50% {
+        background-color: rgb(92, 0, 213);
+        box-shadow: inset 6px 6px 10px 0 rgba(254, 70, 24, 0.2), inset -6px -6px 10px 0 rgba(249, 130, 18, 0.5);
+
+    }
+
+    100% {
+        background-color: rgb(156, 12, 149);
+        box-shadow: inset 6px 6px 10px 0 rgba(255, 0, 0, 0.2), inset -6px -6px 10px 0 rgba(236, 10, 10, 0.5);
+    }
+}

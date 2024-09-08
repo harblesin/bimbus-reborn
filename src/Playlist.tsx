@@ -63,6 +63,7 @@ export default function Playlist() {
             <SongList
                 items={songList}
                 onChange={updateOrder}
+                nowPlayingId={nowPlayingId}
                 renderItem={(item) => (
                     <SongList.Item id={item.id}>
                         <SongList.DragHandle />

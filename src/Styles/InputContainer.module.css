@@ -10,8 +10,9 @@
 
 .controls {
   height: 100px;
-  border: 2px dashed lightblue;
+  border: 2px outset lightblue;
   max-width: 70%;
+  border-radius: 10px;
   width: 100%;
   display: flex;
   align-items: center;
@@ -19,6 +20,15 @@
   justify-content: center;
   display: inline-block;
   width: 100%;
+  box-shadow: 0px 0px 16px -6px rgba(0,0,0,0.75);
+}
+
+.controlButton:hover {
+  cursor: pointer;
+}
+
+.controls > div > label {
+    font-family: 'Fira Sans', sans-serif;
 }
 
 label {
@@ -44,4 +54,16 @@ button {
 
 .input {
   width: 80%;
+}
+
+.notShuffled {
+  background-color: green;
+}
+
+.shuffled {
+  box-shadow: inset 2px 2px 10px #000;
+  outline: none;
+  border: 1px solid black;
+  border-radius:2px;
+  background-color: red ;
 }

@@ -99,7 +99,8 @@ const stopYoutube = (req: any, res: any) => {
 }
 
 const shuffleYoutube = async (req: any, res: any) => {
-    res.json(await bot.shuffleYoutube())
+    bot.setShuffle();
+    res.status(200).json({ message: "Shuffle value changed" });
 }
 
 const updateOrder = async (req: any, res: any) => {
