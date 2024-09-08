@@ -11,6 +11,7 @@ export default function Playlist() {
 
     const [songList, setSongList] = useState([]);
     const [nowPlayingId, setNowPlayingId] = useState(null);
+    const [shuffle, setShuffle ] = useState(false);
 
     const playSong = (id) => {
         axios.post('/api/bot/play/', { id: id });
@@ -53,6 +54,11 @@ export default function Playlist() {
             setSongList(payload.updatedList);
         });
 
+        socket.on('shuffleUpdate', (payload) => {
+            console.log(payload.message);
+            setShuffle(payload.shuffle);
+        })
+
     }, []);
 
     return (
@@ -75,7 +81,7 @@ export default function Playlist() {
                     </SongList.Item>
                 )}
             />
-            <InputContainer />
+            <InputContainer shuffle={shuffle} setShuffle={setShuffle} />
         </div>
     );
 

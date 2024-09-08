@@ -4,10 +4,9 @@ import axios from 'axios';
 import { LuStepBack, LuStepForward, LuPause, LuPlay, LuShuffle, LuVolume1, LuVolume2 } from "react-icons/lu";
 
 
-const InputContainer = () => {
+const InputContainer = (props: any) => {
 
     const [link, setLink] = useState('');
-    const [shuffle, setShuffle ] = useState(false);
 
     const addLink = () => {
         if (!link.trim()) {
@@ -24,10 +23,12 @@ const InputContainer = () => {
 
     const playerUpdate = (type: string) => {
         if(type === 'shuffle') {
-            setShuffle(!shuffle);
+            props.setShuffle(!props.shuffle);
         }
         axios.get(`/api/bot/${type}`);
     }
+
+    // useEffect( )
 
     return (
         <div className={styles.container}>
@@ -56,7 +57,7 @@ const InputContainer = () => {
                 <button className={styles.controlButton} onClick={() => playerUpdate('volumeup')}>
                     <LuVolume2 />
                 </button>
-                <button className={`${styles.controlButton} ${shuffle ? styles.shuffled : styles.notShuffled}`} onClick={() => playerUpdate('shuffle')}>
+                <button className={`${styles.controlButton} ${props.shuffle ? styles.shuffled : styles.notShuffled}`} onClick={() => playerUpdate('shuffle')}>
                     <LuShuffle />
                 </button>
             </div>
