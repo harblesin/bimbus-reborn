@@ -1,0 +1,18 @@
+# Front-end Dockerfile example
+FROM node:18-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache ffmpeg
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+EXPOSE 8080
+
+CMD ["npx", "concurrently", "react-scripts start", "nodemon main.ts"]
