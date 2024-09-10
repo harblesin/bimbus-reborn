@@ -6,7 +6,8 @@ export const initSocket = (server: any) => {
     try {
         io =  new Server(server, { cors: { origin: "*"}});    
         io.on('connection', () => {
-            console.log("Socket connected")
+            const now = new Date();
+            return console.info(`${process.pid} | ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} | Socket | New connection established`);
         })
     } catch (err) {
         console.log(err)

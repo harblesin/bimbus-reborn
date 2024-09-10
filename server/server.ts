@@ -27,7 +27,8 @@ function startServer(): Promise<void> {
             });
             
             let server = app.listen(PORT, () => {
-                console.log(`NODE server now running on port ${PORT}`)
+                const now = new Date();
+                console.info(`${process.pid} | ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} | Server | Express server now running on port ${PORT}`);
             });
             initSocket(server);
             resolve();

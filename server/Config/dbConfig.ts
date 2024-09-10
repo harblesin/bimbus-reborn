@@ -12,11 +12,12 @@ const db: any = new Pool({
 });
 
 const createDbConnection = async () => {
+  const now = new Date();
   await db.connect(async (err: Error) => {
     if (err) {
-      console.log(`Error connecting to database: ${err}`);
+      console.info(`${process.pid} | ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} | Database | Error connecting to database: ${err}`);
     } else {
-      console.log(`Database connection established`);
+      console.info(`${process.pid} | ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} | Database | Connection established`);
     }
   });
 }
