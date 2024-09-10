@@ -2,7 +2,7 @@ module.exports = {
     apps: [
       {
         name: 'bimbus-reborn',         // Name of your application
-        script: 'server/server.ts',              // Entry point of your app (TypeScript file)
+        script: 'main.ts',              // Entry point of your app (TypeScript file)
         interpreter: '/home/yea/.nvm/versions/node/v20.5.0/bin/ts-node',        // Specifies the interpreter to use
         watch: true,                   // Optional: Watch files for changes and restart
         env: {
