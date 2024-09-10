@@ -1,6 +1,8 @@
+import dotenv from 'dotenv';
 import { Pool } from 'pg';
-const { DATABASE, PGUSER, PGPASSWORD, PGHOST, PGPORT } = process.env;
+dotenv.config();
 
+const { DATABASE, PGUSER, PGPASSWORD, PGHOST, PGPORT } = process.env;
 const db: any = new Pool({
   user: PGUSER,
   password: PGPASSWORD,
@@ -9,10 +11,16 @@ const db: any = new Pool({
   database: DATABASE,
 });
 
-const connectToDb = async () => {
-  await db.connect();
+const createDbConnection = async () => {
+  await db.connect(async (err: Error) => {
+    if (err) {
+      console.log(`Error connecting to database: ${err}`);
+    } else {
+      console.log(`Database connection established`);
+    }
+  });
 }
 
-connectToDb();
+createDbConnection();
 
-module.exports = db;
+export default db;

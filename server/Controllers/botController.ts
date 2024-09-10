@@ -2,7 +2,7 @@ import { getIO } from "../socketHandler";
 const bot = require("../../bot/bot");
 const ytdl = require('@distube/ytdl-core');
 const db = require('../Config/dbConfig.ts');
-const { fetchSongs } = require("../../bot/utils");
+const { fetchSongs } = require("../../bot/utils/utils");
 
 const play = (req: any, res: any) => {
     bot.webPlaySong();
