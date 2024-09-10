@@ -47,7 +47,7 @@
     ]
   },
   "scripts": {
-    "launch": "concurrently \"react-scripts start\" \"nodemon server/server.ts\"",
+    "launch": "concurrently \"react-scripts start\" \"nodemon main.ts\"",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

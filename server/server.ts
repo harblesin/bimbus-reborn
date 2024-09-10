@@ -4,10 +4,10 @@ import path from 'path';
 import router from "./Routes";
 import { initSocket } from "./socketHandler";
 
+dotenv.config();
 const app = express();
 const PORT = process.env.NODE_SERVER_PORT;
 
-dotenv.config();
 
 function startServer(): Promise<void> {
 
@@ -30,7 +30,7 @@ function startServer(): Promise<void> {
                 console.log(`NODE server now running on port ${PORT}`)
             });
             initSocket(server);
-            resolve()
+            resolve();
         } catch (err) {
             console.log(`Error occurring starting http server: ${err}`);
             reject(err);

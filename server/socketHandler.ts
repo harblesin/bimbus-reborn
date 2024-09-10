@@ -1,13 +1,16 @@
-const socketIO = require('socket.io')
+import { Server } from 'socket.io';
 
 let io: any;
 
 export const initSocket = (server: any) => {
-    io = socketIO(server, { cors: { origin: "*"}});
-
-    io.on('connection', () => {
-        console.log("Socket connected")
-    })
+    try {
+        io =  new Server(server, { cors: { origin: "*"}});    
+        io.on('connection', () => {
+            console.log("Socket connected")
+        })
+    } catch (err) {
+        console.log(err)
+    }
 
 }
 
