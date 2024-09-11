@@ -1,6 +1,6 @@
 import startServer from "./server/server";
 
-startServer().catch((err: any) => {
-    return console.log(`Error occurring starting http server: ${err}`);
+startServer().catch(() => {
+    // return console.log(`Error occurring starting http server: ${err}`);
 });
 
