@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   dev:
     build:
@@ -10,7 +8,7 @@ services:
       - "8080:8080"
     volumes:
       - .:/app
-    command: npx concurrently "react-scripts start" "nodemon main.ts"
+    command: npx concurrently "react-scripts start" "nodemon --legacy-watch main.ts"
 
   prod:
       build:
