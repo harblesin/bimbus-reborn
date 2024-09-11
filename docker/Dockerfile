@@ -20,7 +20,4 @@ COPY --from=builder /app/build ./build
 
 COPY main.ts ./
 
-EXPOSE 80
-EXPOSE 443
-
-CMD ["ts-node", "main.ts"]
+CMD ["npx", "ts-node", "main.ts"]
