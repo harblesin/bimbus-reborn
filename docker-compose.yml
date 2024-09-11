@@ -16,4 +16,4 @@ services:
         dockerfile: ./docker/Dockerfile
       ports:
         - "8080:8080"
-      command: ts-node main.ts
+      command: npx ts-node main.ts
