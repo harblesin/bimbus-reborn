@@ -1,4 +1,4 @@
-import db from '../../server/Config/dbConfig';
+import db, { getDb } from '../../server/Config/dbConfig';
 import ytdl from '@distube/ytdl-core';
 import { createAudioResource, StreamType } from '@discordjs/voice';
 
@@ -24,7 +24,7 @@ const createResource = (youtubeLink: string, volume: number) => {
 
 const fetchSongs = async () => {
     try {
-        let { rows } = await db.query('SELECT * FROM links ORDER BY position ASC');
+        let { rows } = await getDb().query('SELECT * FROM links ORDER BY position ASC');
         return rows;
     } catch (error) {
         console.log(`Error fetching links: ${error}`);

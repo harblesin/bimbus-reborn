@@ -1,7 +1,7 @@
+import { getDb } from "../Config/dbConfig";
 import { getIO } from "../socketHandler";
 const bot = require("../../bot/bot");
 const ytdl = require('@distube/ytdl-core');
-const db = require('../Config/dbConfig.ts');
 const { fetchSongs } = require("../../bot/utils/utils");
 
 const play = (req: any, res: any) => {
@@ -24,7 +24,7 @@ const playYoutube = async (req: any, res: any) => {
 const deleteYoutube = async (req: any, res: any) => {
     const { id, oldList } = req.body;
     try {
-        await db.query(`DELETE FROM links WHERE id = $1`, [id]);
+        await getDb().query(`DELETE FROM links WHERE id = $1`, [id]);
         const songs = await fetchSongs();
         bot.updateNowPlayingIndex(oldList, songs);
         getIO().emit('songRemoved', { message: 'Song Removed.', updatedList: songs });
@@ -66,7 +66,7 @@ const addYoutubeLink = async (req: any, res: any) => {
                         END
                     );`;
         let values = [linkInfo.player_response.videoDetails.title, link, linkInfo.player_response.videoDetails.thumbnail.thumbnails[0].url];
-        await db.query(sqlString, values);
+        await getDb().query(sqlString, values);
         const songs = await fetchSongs();
         getIO().emit('songAdded', { message: 'Song Added.', updatedList: songs });
         res.json(songs);
@@ -117,7 +117,7 @@ const updateOrder = async (req: any, res: any) => {
         WHERE id IN (${list.map((l: any) => l.id).join(', ')})
     `;
 
-    await db.query(sqlString);
+    await getDb().query(sqlString);
     const songs = await fetchSongs();
     bot.updateNowPlayingIndex(oldList, songs);
     getIO().emit('orderUpdate', { message: 'Song order updated.', updatedList: songs });

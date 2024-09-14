@@ -22,6 +22,12 @@ const createDbConnection = async () => {
   });
 }
 
+const getDb = () => {
+  return db;
+}
+
+
 createDbConnection();
 
 export default db;
+export { getDb };
