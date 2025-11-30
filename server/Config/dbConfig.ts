@@ -18,7 +18,7 @@ export const db = new Pool({
 (async () => {
   const now = new Date();
   try {
-    const client = await pool.connect();
+    const client = await db.connect();
     console.info(
       `${
         process.pid
