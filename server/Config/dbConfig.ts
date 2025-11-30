@@ -1,4 +1,4 @@
-// db.ts
+// server/Config/dbConfig.ts
 import dotenv from "dotenv";
 import { Pool } from "pg";
 
@@ -6,7 +6,7 @@ dotenv.config();
 
 const { DATABASE, PGUSER, PGPASSWORD, PGHOST, PGPORT } = process.env;
 
-export const db = new Pool({
+export const pool = new Pool({
   user: PGUSER,
   password: PGPASSWORD,
   host: PGHOST,
@@ -14,11 +14,11 @@ export const db = new Pool({
   database: DATABASE,
 });
 
-// Optional: simple startup check
+// Optional: log a simple connection test
 (async () => {
   const now = new Date();
   try {
-    const client = await db.connect();
+    const client = await pool.connect();
     console.info(
       `${
         process.pid
@@ -34,4 +34,4 @@ export const db = new Pool({
   }
 })();
 
-export default db;
+export default pool;
