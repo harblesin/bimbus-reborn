@@ -8,7 +8,7 @@ const createResource = (youtubeLink: string, volume: number) => {
     highWaterMark: 1 << 30,
     liveBuffer: 20000,
     dlChunkSize: 4096,
-    quality: "highestaudio",
+    // quality: "highestaudio",
   });
   const resource = createAudioResource(stream, {
     inputType: StreamType.Arbitrary,
