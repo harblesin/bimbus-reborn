@@ -1,9 +1,12 @@
-import dotenv from 'dotenv';
-import { Pool } from 'pg';
+// db.ts
+import dotenv from "dotenv";
+import { Pool } from "pg";
+
 dotenv.config();
 
 const { DATABASE, PGUSER, PGPASSWORD, PGHOST, PGPORT } = process.env;
-const db: any = new Pool({
+
+export const db = new Pool({
   user: PGUSER,
   password: PGPASSWORD,
   host: PGHOST,
@@ -11,17 +14,24 @@ const db: any = new Pool({
   database: DATABASE,
 });
 
-const createDbConnection = async () => {
+// Optional: simple startup check
+(async () => {
   const now = new Date();
-  await db.connect(async (err: Error) => {
-    if (err) {
-      console.info(`${process.pid} | ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} | Database | Error connecting to database: ${err}`);
-    } else {
-      console.info(`${process.pid} | ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} | Database | Connection established`);
-    }
-  });
-}
-
-createDbConnection();
+  try {
+    const client = await pool.connect();
+    console.info(
+      `${
+        process.pid
+      } | ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} | Database | Connection established`
+    );
+    client.release();
+  } catch (err) {
+    console.info(
+      `${
+        process.pid
+      } | ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} | Database | Error connecting to database: ${err}`
+    );
+  }
+})();
 
 export default db;
