@@ -8,12 +8,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.NODE_SERVER_PORT || 8080;
 
-// Works in BOTH:
-// - dev TS:    __dirname = .../server
-// - prod JS:   __dirname = .../dist-server/server
-const ROOT_DIR = path.resolve(__dirname, "..", "..");
+// __dirname when compiled is: dist-server/server
+// go up TWO levels to repo root: dist-server/server -> dist-server -> repo root
+const ROOT_DIR = path.resolve(__dirname, "../..");
 const BUILD_DIR = path.join(ROOT_DIR, "build");
-const PUBLIC_DIR = path.join(ROOT_DIR, "public");
 
 function startServer(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -21,16 +19,14 @@ function startServer(): Promise<void> {
       app.use(express.urlencoded({ extended: true, limit: "1mb" }));
       app.use(express.json({ limit: "1mb" }));
 
-      // CRA build output
-      app.use(express.static(BUILD_DIR));
-
-      // Optional (only if you actually have /public assets you serve at runtime)
-      app.use(express.static(PUBLIC_DIR));
-
+      // API routes FIRST
       app.use(router);
 
-      // SPA fallback
-      app.get("*", (req, res) => {
+      // Serve React build static assets
+      app.use(express.static(BUILD_DIR));
+
+      // React catch-all LAST
+      app.get("*", (_req, res) => {
         res.sendFile(path.join(BUILD_DIR, "index.html"));
       });
 

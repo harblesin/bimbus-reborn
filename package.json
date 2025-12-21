@@ -48,9 +48,11 @@
   "scripts": {
     "launch": "concurrently \"react-scripts start\" \"nodemon main.ts\"",
     "start": "react-scripts start",
-    "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "build:client": "react-scripts build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "build": "npm run build:client && npm run build:server"
   },
   "eslintConfig": {
     "extends": [
