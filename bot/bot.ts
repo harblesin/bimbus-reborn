@@ -9,6 +9,8 @@ import {
   joinVoiceChannel,
   createAudioPlayer,
   AudioPlayerStatus,
+  NoSubscriberBehavior,
+  VoiceConnection,
 } from "@discordjs/voice";
 
 import {
@@ -39,7 +41,20 @@ const DEFAULT_SERVER_ID = requireEnv("DEFAULT_SERVER_ID");
 const DEFAULT_CHANNEL_ID = requireEnv("DEFAULT_CHANNEL_ID");
 const NODE_ENV = process.env.NODE_ENV;
 
-const player = createAudioPlayer();
+// Voice + player state that web commands can rely on
+let connection: VoiceConnection | null = null;
+
+// Gate web commands until we're joined/subscribed
+let readyResolve!: () => void;
+const readyPromise = new Promise<void>((resolve) => {
+  readyResolve = resolve;
+});
+
+const player = createAudioPlayer({
+  behaviors: {
+    noSubscriber: NoSubscriberBehavior.Play,
+  },
+});
 
 const client = new Client({
   intents: [
@@ -66,6 +81,8 @@ async function safeFetchSongs() {
 }
 
 async function playAtIndex(index: number) {
+  await readyPromise;
+
   const songs = await safeFetchSongs();
 
   // clamp index
@@ -74,10 +91,15 @@ async function playAtIndex(index: number) {
 
   nowPlayingIndex = index;
   currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
+
+  // Force stop to avoid weird “already playing but silent” states
+  player.stop(true);
   player.play(currentResource);
 }
 
 async function nextSong() {
+  await readyPromise;
+
   const songs = await safeFetchSongs();
 
   if (shuffle) {
@@ -88,10 +110,13 @@ async function nextSong() {
   }
 
   currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
+  player.stop(true);
   player.play(currentResource);
 }
 
 async function prevSong() {
+  await readyPromise;
+
   const songs = await safeFetchSongs();
 
   if (shuffle) {
@@ -102,6 +127,7 @@ async function prevSong() {
   }
 
   currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
+  player.stop(true);
   player.play(currentResource);
 }
 
@@ -110,14 +136,15 @@ client.once("ready", async () => {
 
   const channel = await guild.channels.fetch(DEFAULT_CHANNEL_ID);
   if (!channel) throw new Error(`Channel not found: ${DEFAULT_CHANNEL_ID}`);
-  if (!channel.isVoiceBased())
+  if (!channel.isVoiceBased()) {
     throw new Error(`Channel is not voice-based: ${DEFAULT_CHANNEL_ID}`);
+  }
 
   const voiceChannel = channel as VoiceBasedChannel;
 
   logWrapper("Client", `Bimbus logged into discord server: ${guild.name}`);
 
-  const connection = joinVoiceChannel({
+  connection = joinVoiceChannel({
     debug: NODE_ENV === "development",
     channelId: voiceChannel.id,
     guildId: guild.id,
@@ -130,6 +157,9 @@ client.once("ready", async () => {
 
   connection.subscribe(player);
   player.on("stateChange", stateChangeLogger("Player"));
+
+  // ✅ Unblock web commands now that we're subscribed
+  readyResolve();
 
   // start playback
   await playAtIndex(nowPlayingIndex);
@@ -197,16 +227,23 @@ client.on("voiceStateUpdate", () => {
 // WEB COMMANDS
 
 export const webResume = async () => {
+  await readyPromise;
   webPlayerIsPaused = false;
   player.unpause();
 };
 
-export const webPause = () => {
+export const webPause = async () => {
+  await readyPromise;
   webPlayerIsPaused = true;
   player.pause();
 };
 
 export const webPlay = async (id: any) => {
+  await readyPromise;
+
+  // If the user hit "play", treat it as taking over from any prior web pause
+  webPlayerIsPaused = false;
+
   const songs = await safeFetchSongs();
   const index = songs.findIndex((s: any) => s.id === id);
   if (index < 0) return false;
@@ -215,7 +252,9 @@ export const webPlay = async (id: any) => {
   return songs[index];
 };
 
-export const volumeDown = () => {
+export const volumeDown = async () => {
+  await readyPromise;
+
   if (!currentResource?.volume) return;
   if (currentVolume < 0.02) return;
 
@@ -224,7 +263,9 @@ export const volumeDown = () => {
   logWrapper("Resource", `Volume has been set to: ${currentVolume}`);
 };
 
-export const volumeUp = () => {
+export const volumeUp = async () => {
+  await readyPromise;
+
   if (!currentResource?.volume) return;
   if (currentVolume > 0.95) return;
 
@@ -239,6 +280,8 @@ export const updateNowPlayingIndex = async (
   oldList: any[],
   updatedList: any[]
 ) => {
+  await readyPromise;
+
   if (!oldList?.length || !updatedList?.length) return;
 
   const nowPlayingId = oldList[nowPlayingIndex]?.id;
@@ -254,13 +297,16 @@ export const updateNowPlayingIndex = async (
       songs[nowPlayingIndex].link,
       currentVolume
     );
+    player.stop(true);
     player.play(currentResource);
   } else {
     nowPlayingIndex = newIndex;
   }
 };
 
-export const setShuffle = () => {
+export const setShuffle = async () => {
+  await readyPromise;
+
   shuffle = !shuffle;
   getIO().emit("shuffleUpdate", {
     message: "Shuffle value has been updated.",
