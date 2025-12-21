@@ -1,52 +1,93 @@
 import db from "../../server/Config/dbConfig";
-import ytdl from "@distube/ytdl-core";
-import {
-  createAudioResource,
-  StreamType,
-  AudioResource,
-} from "@discordjs/voice";
+import { createAudioResource, StreamType } from "@discordjs/voice";
+import { spawn } from "child_process";
+import { PassThrough } from "stream";
 
-const createResource = (youtubeLink: string, volume: number): AudioResource => {
-  const stream = ytdl(youtubeLink, {
-    filter: "audioonly",
-    quality: "highestaudio",
-    highWaterMark: 1 << 25,
-    dlChunkSize: 1 << 20,
-    liveBuffer: 20000,
-    requestOptions: {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-    },
+const createResource = (youtubeLink: string, volume: number) => {
+  const yt = spawn(
+    "yt-dlp",
+    [
+      "-f",
+      "bestaudio/best",
+      "-o",
+      "-",
+      "--no-playlist",
+      "--quiet",
+      "--no-warnings",
+      youtubeLink,
+    ],
+    { stdio: ["ignore", "pipe", "pipe"] }
+  );
+
+  const ff = spawn(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "pipe:0",
+      "-vn",
+      "-ac",
+      "2",
+      "-ar",
+      "48000",
+      "-f",
+      "ogg",
+      "pipe:1",
+    ],
+    { stdio: ["pipe", "pipe", "pipe"] }
+  );
+
+  const output = new PassThrough();
+
+  (yt.stdout as any).pipe(ff.stdin as any);
+  (ff.stdout as any).pipe(output);
+
+  yt.stderr.on("data", (d) => {
+    const msg = d.toString().trim();
+    if (msg) console.error(`${process.pid} | yt-dlp | ${msg}`);
   });
 
-  stream.on("response", (res: any) => {
-    console.info(
-      `${process.pid} | Stream | response ${res.statusCode} | ${youtubeLink}`
-    );
+  ff.stderr.on("data", (d) => {
+    const msg = d.toString().trim();
+    if (msg) console.error(`${process.pid} | ffmpeg | ${msg}`);
   });
 
-  stream.on("error", (err: any) => {
-    console.error(
-      `${process.pid} | Stream | error: ${err?.message ?? String(err)} | ${
-        (err as any)?.statusCode ? `status=${(err as any).statusCode}` : ""
-      } | ${youtubeLink}`
-    );
+  const kill = () => {
+    try {
+      yt.kill("SIGKILL");
+    } catch {}
+    try {
+      ff.kill("SIGKILL");
+    } catch {}
+    try {
+      output.destroy();
+    } catch {}
+  };
+
+  yt.on("close", (code) => {
+    if (code !== 0) {
+      console.error(
+        `${process.pid} | yt-dlp | exited with code ${code} | ${youtubeLink}`
+      );
+      kill();
+    }
   });
 
-  // @ts-ignore
-  stream.on("info", (_info: any, format: any) => {
-    console.info(
-      `${process.pid} | Stream | format: ${format?.mimeType ?? "unknown"} | ${
-        format?.audioBitrate ?? "?"
-      }kbps | ${youtubeLink}`
-    );
+  ff.on("close", (code) => {
+    if (code !== 0) {
+      console.error(
+        `${process.pid} | ffmpeg | exited with code ${code} | ${youtubeLink}`
+      );
+      kill();
+    }
   });
 
-  const resource = createAudioResource(stream as any, {
-    inputType: StreamType.WebmOpus,
+  output.on("error", kill);
+
+  const resource = createAudioResource(output, {
+    inputType: StreamType.OggOpus,
     inlineVolume: true,
   });
 

@@ -73,6 +73,7 @@ let currentVolume = 0.1;
 let currentResource: any = null;
 let webPlayerIsPaused = false;
 let shuffle = false;
+let lastPlayAttemptAt = 0;
 
 let guild: Guild | null = null;
 
@@ -87,16 +88,16 @@ async function safeFetchSongs() {
 async function playAtIndex(index: number) {
   await readyPromise;
 
+  lastPlayAttemptAt = Date.now();
+
   const songs = await safeFetchSongs();
 
-  // clamp index
   if (index < 0) index = 0;
   if (index > songs.length - 1) index = songs.length - 1;
 
   nowPlayingIndex = index;
   currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
 
-  // Force stop to avoid weird “already playing but silent” states
   player.stop(true);
   player.play(currentResource);
 }
@@ -190,14 +191,6 @@ client.once("ready", async () => {
       player.pause();
     }
   });
-
-  let lastPlayAttemptAt = 0;
-
-  async function playAtIndex(index: number) {
-    await readyPromise;
-    lastPlayAttemptAt = Date.now();
-    // ...rest stays the same
-  }
 
   player.on(AudioPlayerStatus.Idle, () => {
     const elapsed = Date.now() - lastPlayAttemptAt;
