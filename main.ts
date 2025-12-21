@@ -1,6 +1,11 @@
 import startServer from "./server/server";
+import { ensureYoutubeLogin } from "./server/youtubeContext";
 
-startServer().catch(err => {
-    return console.log(`Error occurring starting http server: ${err}`);
+async function main() {
+  await ensureYoutubeLogin(); // <--- add this
+  await startServer();
+}
+
+main().catch((err) => {
+  console.log(`Error occurring starting program: ${err}`);
 });
-

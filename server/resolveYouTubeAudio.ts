@@ -1,4 +1,4 @@
-import { getYoutubeContext } from "./youtubeSession";
+import { getYoutubeContext } from "./youtubeContext";
 
 export async function resolveYouTubeAudioUrl(
   watchUrl: string
@@ -14,16 +14,13 @@ export async function resolveYouTubeAudioUrl(
 
   await page.goto(watchUrl, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(3000);
-
   await page.close();
 
   const audioLike = urls.find((u) => u.includes("&mime=audio"));
   const anyPlayback = urls[0];
 
   const chosen = audioLike ?? anyPlayback;
-  if (!chosen) {
-    throw new Error("Could not resolve googlevideo videoplayback URL");
-  }
+  if (!chosen) throw new Error("Could not resolve videoplayback URL.");
 
   return chosen;
 }

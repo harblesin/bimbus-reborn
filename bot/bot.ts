@@ -72,10 +72,12 @@ let currentVolume = 0.1;
 let currentResource: any = null;
 let webPlayerIsPaused = false;
 let shuffle = false;
-let lastPlayAttemptAt = 0;
-let isTransitioning = false;
 
 let guild: Guild | null = null;
+
+// prevents “idle->nextSong->idle->nextSong…” spam
+let transitionLock = false;
+let lastStartAt = 0;
 
 async function safeFetchSongs() {
   const songs = await fetchSongs();
@@ -87,22 +89,18 @@ async function safeFetchSongs() {
 
 function cleanupCurrentResource() {
   try {
-    (currentResource as any)?.__cleanup?.();
+    currentResource?.__cleanup?.();
   } catch {}
+  currentResource = null;
 }
 
-function playResource(resource: any) {
-  player.stop(true);
-  player.play(resource);
-}
-
-async function playAtIndex(index: number) {
+async function startPlaybackAtIndex(index: number) {
   await readyPromise;
-  if (isTransitioning) return;
-  isTransitioning = true;
+
+  if (transitionLock) return;
+  transitionLock = true;
 
   try {
-    lastPlayAttemptAt = Date.now();
     const songs = await safeFetchSongs();
 
     if (index < 0) index = 0;
@@ -111,15 +109,18 @@ async function playAtIndex(index: number) {
     nowPlayingIndex = index;
 
     cleanupCurrentResource();
-    currentResource = createResource(
+
+    const res = await createResource(
       songs[nowPlayingIndex].link,
       currentVolume
     );
+    currentResource = res;
 
+    lastStartAt = Date.now();
     player.stop(true);
     player.play(currentResource);
   } finally {
-    isTransitioning = false;
+    transitionLock = false;
   }
 }
 
@@ -135,9 +136,7 @@ async function nextSong() {
       nowPlayingIndex === songs.length - 1 ? 0 : nowPlayingIndex + 1;
   }
 
-  cleanupCurrentResource();
-  currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
-  playResource(currentResource);
+  await startPlaybackAtIndex(nowPlayingIndex);
 }
 
 async function prevSong() {
@@ -152,9 +151,7 @@ async function prevSong() {
       nowPlayingIndex === 0 ? songs.length - 1 : nowPlayingIndex - 1;
   }
 
-  cleanupCurrentResource();
-  currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
-  playResource(currentResource);
+  await startPlaybackAtIndex(nowPlayingIndex);
 }
 
 client.once("ready", async () => {
@@ -184,9 +181,11 @@ client.once("ready", async () => {
   connection.subscribe(player);
   player.on("stateChange", stateChangeLogger("Player"));
 
+  // unblock web commands
   readyResolve();
 
-  await playAtIndex(nowPlayingIndex);
+  // start playback
+  await startPlaybackAtIndex(nowPlayingIndex);
 
   player.on(AudioPlayerStatus.Playing, async () => {
     const songs = await safeFetchSongs();
@@ -212,17 +211,18 @@ client.once("ready", async () => {
   });
 
   player.on(AudioPlayerStatus.Idle, () => {
-    const elapsed = Date.now() - lastPlayAttemptAt;
-    const delay = elapsed < 3000 ? 15000 : 0;
+    // If ffmpeg dies immediately, avoid hammering nextSong in a tight loop
+    const elapsed = Date.now() - lastStartAt;
+    const delay = elapsed < 1500 ? 1500 : 0;
     setTimeout(() => void nextSong(), delay);
   });
 
   player.on("error", (error: any) => {
     logWrapper(
       "Player",
-      `Error thrown within player: ${error.message ?? String(error)}`
+      `Error thrown within player: ${error?.message ?? String(error)}`
     );
-    setTimeout(() => void nextSong(), 5000);
+    setTimeout(() => void nextSong(), 1500);
   });
 });
 
@@ -250,6 +250,8 @@ client.on("voiceStateUpdate", () => {
   }
 });
 
+// WEB COMMANDS
+
 export const webResume = async () => {
   await readyPromise;
   webPlayerIsPaused = false;
@@ -270,7 +272,7 @@ export const webPlay = async (id: any) => {
   const index = songs.findIndex((s: any) => s.id === id);
   if (index < 0) return false;
 
-  await playAtIndex(index);
+  await startPlaybackAtIndex(index);
   return songs[index];
 };
 
@@ -314,13 +316,7 @@ export const updateNowPlayingIndex = async (
   if (newIndex < 0) {
     const songs = await safeFetchSongs();
     if (nowPlayingIndex >= songs.length) nowPlayingIndex = 0;
-
-    cleanupCurrentResource();
-    currentResource = createResource(
-      songs[nowPlayingIndex].link,
-      currentVolume
-    );
-    playResource(currentResource);
+    await startPlaybackAtIndex(nowPlayingIndex);
   } else {
     nowPlayingIndex = newIndex;
   }
@@ -328,7 +324,6 @@ export const updateNowPlayingIndex = async (
 
 export const setShuffle = async () => {
   await readyPromise;
-
   shuffle = !shuffle;
   getIO().emit("shuffleUpdate", {
     message: "Shuffle value has been updated.",
