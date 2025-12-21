@@ -1,215 +1,287 @@
-import dotenv from 'dotenv';
-import { Client, GatewayIntentBits } from 'discord.js';
-import { joinVoiceChannel, createAudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
-import { createResource, fetchSongs, stateChangeLogger, logWrapper } from './utils/utils';
-import { getIO } from '../server/socketHandler';
-dotenv.config();
-const { DEFAULT_CHANNEL_ID, DEFAULT_SERVER_ID, DISCORD_TOKEN, NODE_ENV } = process.env as envConfig;
+import dotenv from "dotenv";
+import {
+  Client,
+  GatewayIntentBits,
+  Guild,
+  VoiceBasedChannel,
+} from "discord.js";
+import {
+  joinVoiceChannel,
+  createAudioPlayer,
+  AudioPlayerStatus,
+} from "@discordjs/voice";
 
-type envConfig = {
-    [key: string]: string;
+import {
+  createResource,
+  fetchSongs,
+  stateChangeLogger,
+  logWrapper,
+} from "./utils/utils";
+import { getIO } from "../server/socketHandler";
+
+dotenv.config();
+
+type EnvConfig = {
+  DISCORD_TOKEN: string;
+  DEFAULT_SERVER_ID: string;
+  DEFAULT_CHANNEL_ID: string;
+  NODE_ENV?: string;
+};
+
+function requireEnv(name: keyof EnvConfig): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required env var: ${name}`);
+  return value;
 }
 
+const DISCORD_TOKEN = requireEnv("DISCORD_TOKEN");
+const DEFAULT_SERVER_ID = requireEnv("DEFAULT_SERVER_ID");
+const DEFAULT_CHANNEL_ID = requireEnv("DEFAULT_CHANNEL_ID");
+const NODE_ENV = process.env.NODE_ENV;
+
 const player = createAudioPlayer();
+
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildVoiceStates
-    ]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildVoiceStates,
+  ],
 });
+
 let nowPlayingIndex = 0;
-let currentVolume = .1;
+let currentVolume = 0.1;
 let currentResource: any = null;
 let webPlayerIsPaused = false;
 let shuffle = false;
 
-let guild: any;
+let guild: Guild | null = null;
 
-client.once('ready', async () => {
-    // Fetch the guild and channel
-    guild = await client.guilds.fetch(DEFAULT_SERVER_ID);
-    const channel = await guild.channels.fetch(DEFAULT_CHANNEL_ID);
+async function safeFetchSongs() {
+  const songs = await fetchSongs();
+  if (!Array.isArray(songs) || songs.length === 0) {
+    throw new Error("fetchSongs() returned an empty list.");
+  }
+  return songs;
+}
 
-    logWrapper('Client', `Bimbus has successfully logged into discord server: ${guild}!`)
+async function playAtIndex(index: number) {
+  const songs = await safeFetchSongs();
 
-    const connection = joinVoiceChannel({
-        debug: NODE_ENV === 'development' ? true : false,
-        channelId: String(DEFAULT_CHANNEL_ID),
-        guildId: String(DEFAULT_SERVER_ID),
-        adapterCreator: guild.voiceAdapterCreator
+  // clamp index
+  if (index < 0) index = 0;
+  if (index > songs.length - 1) index = songs.length - 1;
+
+  nowPlayingIndex = index;
+  currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
+  player.play(currentResource);
+}
+
+async function nextSong() {
+  const songs = await safeFetchSongs();
+
+  if (shuffle) {
+    nowPlayingIndex = Math.floor(Math.random() * songs.length);
+  } else {
+    nowPlayingIndex =
+      nowPlayingIndex === songs.length - 1 ? 0 : nowPlayingIndex + 1;
+  }
+
+  currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
+  player.play(currentResource);
+}
+
+async function prevSong() {
+  const songs = await safeFetchSongs();
+
+  if (shuffle) {
+    nowPlayingIndex = Math.floor(Math.random() * songs.length);
+  } else {
+    nowPlayingIndex =
+      nowPlayingIndex === 0 ? songs.length - 1 : nowPlayingIndex - 1;
+  }
+
+  currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
+  player.play(currentResource);
+}
+
+client.once("ready", async () => {
+  guild = await client.guilds.fetch(DEFAULT_SERVER_ID);
+
+  const channel = await guild.channels.fetch(DEFAULT_CHANNEL_ID);
+  if (!channel) throw new Error(`Channel not found: ${DEFAULT_CHANNEL_ID}`);
+  if (!channel.isVoiceBased())
+    throw new Error(`Channel is not voice-based: ${DEFAULT_CHANNEL_ID}`);
+
+  const voiceChannel = channel as VoiceBasedChannel;
+
+  logWrapper("Client", `Bimbus logged into discord server: ${guild.name}`);
+
+  const connection = joinVoiceChannel({
+    debug: NODE_ENV === "development",
+    channelId: voiceChannel.id,
+    guildId: guild.id,
+    adapterCreator: guild.voiceAdapterCreator,
+  });
+
+  logWrapper("Client", `Bimbus joined discord channel: ${voiceChannel.name}`);
+
+  connection.on("stateChange", stateChangeLogger("Connection"));
+
+  connection.subscribe(player);
+  player.on("stateChange", stateChangeLogger("Player"));
+
+  // start playback
+  await playAtIndex(nowPlayingIndex);
+
+  player.on(AudioPlayerStatus.Playing, async () => {
+    const songs = await safeFetchSongs();
+    const current = songs[nowPlayingIndex];
+
+    logWrapper("Player", `Now Playing: ${current.title}`);
+    getIO().emit("nowPlayingUpdate", {
+      message: `Song has changed to: ${current.title}`,
+      id: current.id,
     });
 
-    logWrapper('Client', `Bimbus joined discord channel: ${channel}`)
+    const me = guild?.members.me;
+    const myChannel = me?.voice.channel;
+    const memberCount = myChannel?.members?.size ?? 0;
 
-    connection.subscribe(player);
-    const songs = await fetchSongs();
-    currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
+    if (memberCount < 2) {
+      logWrapper(
+        "Client",
+        "No other users detected in channel. Pausing Bimbus..."
+      );
+      player.pause();
+    }
+  });
 
-    connection.on('stateChange', stateChangeLogger('Connection'))
+  player.on(AudioPlayerStatus.Idle, () => {
+    void nextSong();
+  });
 
-    player.play(currentResource);
-    player.on('stateChange', stateChangeLogger('Player'))
-    player.on(AudioPlayerStatus.Playing, async () => {
-        let songs = await fetchSongs();
-        logWrapper('Player', `Now Playing: ${songs[nowPlayingIndex].title}`)
-        getIO().emit('nowPlayingUpdate', { message: `Song has changed to: ${songs[nowPlayingIndex].title}`, id: songs[nowPlayingIndex].id });
-        if (guild.members.cache.get(client?.user?.id).voice.channel.members.size < 2) {
-            logWrapper('Client', 'No other users detected in channel. Pausing Bimbus...')
-            player.pause();
-        }
-    });
-    player.on(AudioPlayerStatus.Idle, () => {
-        nextSong();
-    });
-    player.on(AudioPlayerStatus.Paused, () => {
-    });
-    player.on('error', (error: any) => {
-        logWrapper('Player', `Error thrown within player: ${error.message}`)
-        nextSong();
-    });
-
+  player.on("error", (error: any) => {
+    logWrapper(
+      "Player",
+      `Error thrown within player: ${error.message ?? String(error)}`
+    );
+    void nextSong();
+  });
 });
 
-client.on('voiceStateUpdate', (oldState: any, newState: any) => {
-    const botAccount: any = guild.members.cache.get(client?.user?.id);
-    const botChannelSize = botAccount.voice.channel.members.size;
+client.on("voiceStateUpdate", () => {
+  if (!guild) return;
+  if (webPlayerIsPaused) return;
 
-    if (webPlayerIsPaused) {
-        return;
-    }
+  const me = guild.members.me;
+  const myChannel = me?.voice.channel;
+  const memberCount = myChannel?.members?.size ?? 0;
 
-    if (botChannelSize > 1 && player.state.status === AudioPlayerStatus.Paused) {
-        logWrapper('Client', 'New User connected. Resuming Bimbus...')
-        player.unpause();
-    } else if (botChannelSize < 2 && player.state.status === AudioPlayerStatus.Playing) {
-        logWrapper('Client', 'No other users detected in channel. Pausing Bimbus...')
-        player.pause();
-    } else {
-        return;
-    }
+  if (memberCount > 1 && player.state.status === AudioPlayerStatus.Paused) {
+    logWrapper("Client", "New user connected. Resuming Bimbus...");
+    player.unpause();
+    return;
+  }
 
-})
+  if (memberCount < 2 && player.state.status === AudioPlayerStatus.Playing) {
+    logWrapper(
+      "Client",
+      "No other users detected in channel. Pausing Bimbus..."
+    );
+    player.pause();
+    return;
+  }
+});
 
 // WEB COMMANDS
 
-const webResume = async () => {
-    webPlayerIsPaused = false;
-    player.unpause();
-}
+export const webResume = async () => {
+  webPlayerIsPaused = false;
+  player.unpause();
+};
 
-const webPause = () => {
-    webPlayerIsPaused = true;
-    player.pause();
-}
+export const webPause = () => {
+  webPlayerIsPaused = true;
+  player.pause();
+};
 
-const webPlay = async (id: any) => {
-    return new Promise(async (resolve, reject) => {
-        let songs = await fetchSongs();
-        let index = songs.map((link: any) => link.id).indexOf(id);
-        if (!songs[index]) {
-            return resolve(false);
-        }
-        nowPlayingIndex = index;
-        currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
-        player.play(currentResource);
-        return resolve(songs[index]);
-    })
-}
+export const webPlay = async (id: any) => {
+  const songs = await safeFetchSongs();
+  const index = songs.findIndex((s: any) => s.id === id);
+  if (index < 0) return false;
 
-const prevSong = async () => {
-    let songs = await fetchSongs();
-    if (shuffle) {
-        nowPlayingIndex = Math.floor(Math.random() * songs.length);
-    } else {
-        if (nowPlayingIndex === 0) {
-            nowPlayingIndex = songs.length - 1;
-        } else {
-            nowPlayingIndex--
-        }
-    }
-    currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
+  await playAtIndex(index);
+  return songs[index];
+};
+
+export const volumeDown = () => {
+  if (!currentResource?.volume) return;
+  if (currentVolume < 0.02) return;
+
+  currentVolume = +(currentVolume - 0.02).toFixed(2);
+  currentResource.volume.setVolume(currentVolume);
+  logWrapper("Resource", `Volume has been set to: ${currentVolume}`);
+};
+
+export const volumeUp = () => {
+  if (!currentResource?.volume) return;
+  if (currentVolume > 0.95) return;
+
+  currentVolume = +(currentVolume + 0.02).toFixed(2);
+  currentResource.volume.setVolume(currentVolume);
+  logWrapper("Resource", `Volume has been set to: ${currentVolume}`);
+};
+
+export const getNowPlaying = () => nowPlayingIndex;
+
+export const updateNowPlayingIndex = async (
+  oldList: any[],
+  updatedList: any[]
+) => {
+  if (!oldList?.length || !updatedList?.length) return;
+
+  const nowPlayingId = oldList[nowPlayingIndex]?.id;
+  if (!nowPlayingId) return;
+
+  const newIndex = updatedList.findIndex((s: any) => s.id === nowPlayingId);
+
+  if (newIndex < 0) {
+    // current song removed; pick a safe next index
+    const songs = await safeFetchSongs();
+    if (nowPlayingIndex >= songs.length) nowPlayingIndex = 0;
+    currentResource = createResource(
+      songs[nowPlayingIndex].link,
+      currentVolume
+    );
     player.play(currentResource);
-}
+  } else {
+    nowPlayingIndex = newIndex;
+  }
+};
 
-const nextSong = async () => {
-    let songs = await fetchSongs();
+export const setShuffle = () => {
+  shuffle = !shuffle;
+  getIO().emit("shuffleUpdate", {
+    message: "Shuffle value has been updated.",
+    shuffle,
+  });
+};
 
-    if (shuffle) {
-        nowPlayingIndex = Math.floor(Math.random() * songs.length);
-    } else {
-        if (nowPlayingIndex === songs.length - 1) {
-            nowPlayingIndex = 0;
-        } else {
-            nowPlayingIndex++
-        }
-    }
-    currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
-    player.play(currentResource);
-}
+export const getShuffle = () => shuffle;
 
-const volumeDown = () => {
-    if (currentVolume < .02) {
-        return;
-    }
-    currentVolume = currentVolume - .02;
-    currentResource.volume.setVolume(currentVolume);
-    logWrapper('Resource', `Volume has been set to: ${currentVolume}`)
-}
-
-
-const volumeUp = () => {
-    if (currentVolume > .95) {
-        return;
-    }
-    currentVolume = currentVolume + .02;
-    currentResource.volume.setVolume(currentVolume);
-    logWrapper('Resource', `Volume has been set to: ${currentVolume}`);
-}
-
-const getNowPlaying = () => {
-    return nowPlayingIndex;
-}
-
-const updateNowPlayingIndex = async (oldList: any, updatedList: any) => {
-    let nowPlayingId = oldList[nowPlayingIndex].id;
-    let newIndex = updatedList.map((l: any) => l.id).findIndex((i: any) => i === nowPlayingId);
-    if (newIndex < 0) {
-        let songs = await fetchSongs();
-        const idMap = oldList.map((song: any) => song.id);
-        const lastItemId = oldList.at(-1).id;
-        if (nowPlayingIndex === idMap.indexOf(lastItemId)) {
-            nowPlayingIndex = 0;
-        }
-        currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
-        player.play(currentResource);
-    } else {
-        nowPlayingIndex = newIndex;
-    }
-}
-
-const setShuffle = () => {
-    shuffle = !shuffle;
-    getIO().emit('shuffleUpdate', { message: `Shuffle value has been updated.`, shuffle: shuffle });
-}
-
-const getShuffle = () => {
-    return shuffle;
-}
-
-module.exports = {
-    webPlay,
-    webPause,
-    nextSong,
-    prevSong,
-    webResume,
-    volumeUp,
-    volumeDown,
-    getNowPlaying,
-    updateNowPlayingIndex,
-    setShuffle,
-    getShuffle
-}
-
+export const api = {
+  webPlay,
+  webPause,
+  nextSong,
+  prevSong,
+  webResume,
+  volumeUp,
+  volumeDown,
+  getNowPlaying,
+  updateNowPlayingIndex,
+  setShuffle,
+  getShuffle,
+};
 
 client.login(DISCORD_TOKEN);
