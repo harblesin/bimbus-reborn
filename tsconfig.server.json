@@ -11,5 +11,12 @@
     "resolveJsonModule": true
   },
   "include": ["main.ts", "server/**/*", "bot/**/*"],
-  "exclude": ["node_modules", "build", "dist", "dist-server"]
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "dist-server",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
 }
