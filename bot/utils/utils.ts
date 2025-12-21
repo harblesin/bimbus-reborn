@@ -3,21 +3,10 @@ import { createAudioResource, StreamType } from "@discordjs/voice";
 import { spawn } from "child_process";
 import { PassThrough } from "stream";
 
-const createResource = (youtubeLink: string, volume: number) => {
-  const yt = spawn(
-    "yt-dlp",
-    [
-      "-f",
-      "bestaudio/best",
-      "-o",
-      "-",
-      "--no-playlist",
-      "--quiet",
-      "--no-warnings",
-      youtubeLink,
-    ],
-    { stdio: ["ignore", "pipe", "pipe"] }
-  );
+import { resolveYouTubeAudioUrl } from "../../server/resolveYouTubeAudio";
+
+const createResource = async (youtubeLink: string, volume: number) => {
+  const audioUrl = await resolveYouTubeAudioUrl(youtubeLink);
 
   const ff = spawn(
     "ffmpeg",
@@ -25,8 +14,14 @@ const createResource = (youtubeLink: string, volume: number) => {
       "-hide_banner",
       "-loglevel",
       "error",
+      "-reconnect",
+      "1",
+      "-reconnect_streamed",
+      "1",
+      "-reconnect_delay_max",
+      "5",
       "-i",
-      "pipe:0",
+      audioUrl,
       "-vn",
       "-ac",
       "2",
@@ -36,69 +31,11 @@ const createResource = (youtubeLink: string, volume: number) => {
       "ogg",
       "pipe:1",
     ],
-    { stdio: ["pipe", "pipe", "pipe"] }
+    { stdio: ["ignore", "pipe", "pipe"] }
   );
 
   const output = new PassThrough();
-
-  let closed = false;
-  const closeAll = () => {
-    if (closed) return;
-    closed = true;
-
-    try {
-      output.end();
-    } catch {}
-    try {
-      output.destroy();
-    } catch {}
-
-    try {
-      yt.stdout?.unpipe();
-    } catch {}
-    try {
-      ff.stdout?.unpipe();
-    } catch {}
-
-    try {
-      yt.kill("SIGKILL");
-    } catch {}
-    try {
-      ff.kill("SIGKILL");
-    } catch {}
-  };
-
-  (yt.stdout as any).pipe(ff.stdin as any);
   (ff.stdout as any).pipe(output);
-
-  yt.stderr.on("data", (d) => {
-    const msg = d.toString().trim();
-    if (msg) console.error(`${process.pid} | yt-dlp | ${msg}`);
-  });
-
-  ff.stderr.on("data", (d) => {
-    const msg = d.toString().trim();
-    if (msg) console.error(`${process.pid} | ffmpeg | ${msg}`);
-  });
-
-  yt.on("exit", (code, signal) => {
-    if (closed) return;
-    console.error(
-      `${process.pid} | yt-dlp | exit code=${code} signal=${signal} | ${youtubeLink}`
-    );
-    closeAll();
-  });
-
-  ff.on("exit", (code, signal) => {
-    if (closed) return;
-    console.error(
-      `${process.pid} | ffmpeg | exit code=${code} signal=${signal} | ${youtubeLink}`
-    );
-    closeAll();
-  });
-
-  output.on("close", closeAll);
-  output.on("error", closeAll);
 
   const resource: any = createAudioResource(output, {
     inputType: StreamType.OggOpus,
@@ -106,8 +43,14 @@ const createResource = (youtubeLink: string, volume: number) => {
   });
 
   resource.volume?.setVolume(volume);
-
-  resource.__cleanup = closeAll;
+  resource.__cleanup = () => {
+    try {
+      output.destroy();
+    } catch {}
+    try {
+      ff.kill("SIGKILL");
+    } catch {}
+  };
 
   return resource;
 };

@@ -73,6 +73,7 @@ let currentResource: any = null;
 let webPlayerIsPaused = false;
 let shuffle = false;
 let lastPlayAttemptAt = 0;
+let isTransitioning = false;
 
 let guild: Guild | null = null;
 
@@ -97,19 +98,29 @@ function playResource(resource: any) {
 
 async function playAtIndex(index: number) {
   await readyPromise;
+  if (isTransitioning) return;
+  isTransitioning = true;
 
-  lastPlayAttemptAt = Date.now();
+  try {
+    lastPlayAttemptAt = Date.now();
+    const songs = await safeFetchSongs();
 
-  const songs = await safeFetchSongs();
+    if (index < 0) index = 0;
+    if (index > songs.length - 1) index = songs.length - 1;
 
-  if (index < 0) index = 0;
-  if (index > songs.length - 1) index = songs.length - 1;
+    nowPlayingIndex = index;
 
-  nowPlayingIndex = index;
+    cleanupCurrentResource();
+    currentResource = createResource(
+      songs[nowPlayingIndex].link,
+      currentVolume
+    );
 
-  cleanupCurrentResource();
-  currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
-  playResource(currentResource);
+    player.stop(true);
+    player.play(currentResource);
+  } finally {
+    isTransitioning = false;
+  }
 }
 
 async function nextSong() {
@@ -202,7 +213,7 @@ client.once("ready", async () => {
 
   player.on(AudioPlayerStatus.Idle, () => {
     const elapsed = Date.now() - lastPlayAttemptAt;
-    const delay = elapsed < 3000 ? 5000 : 0;
+    const delay = elapsed < 3000 ? 15000 : 0;
     setTimeout(() => void nextSong(), delay);
   });
 
