@@ -44,10 +44,14 @@ const NODE_ENV = process.env.NODE_ENV;
 // Voice + player state that web commands can rely on
 let connection: VoiceConnection | null = null;
 
-// Gate web commands until we're joined/subscribed
+let readyResolved = false;
 let readyResolve!: () => void;
 const readyPromise = new Promise<void>((resolve) => {
-  readyResolve = resolve;
+  readyResolve = () => {
+    if (readyResolved) return;
+    readyResolved = true;
+    resolve();
+  };
 });
 
 const player = createAudioPlayer({
@@ -187,8 +191,18 @@ client.once("ready", async () => {
     }
   });
 
+  let lastPlayAttemptAt = 0;
+
+  async function playAtIndex(index: number) {
+    await readyPromise;
+    lastPlayAttemptAt = Date.now();
+    // ...rest stays the same
+  }
+
   player.on(AudioPlayerStatus.Idle, () => {
-    void nextSong();
+    const elapsed = Date.now() - lastPlayAttemptAt;
+    const delay = elapsed < 1500 ? 1500 : 0;
+    setTimeout(() => void nextSong(), delay);
   });
 
   player.on("error", (error: any) => {

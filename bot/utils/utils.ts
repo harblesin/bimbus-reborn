@@ -1,30 +1,65 @@
 import db from "../../server/Config/dbConfig";
 import ytdl from "@distube/ytdl-core";
-import { createAudioResource, StreamType } from "@discordjs/voice";
+import {
+  createAudioResource,
+  StreamType,
+  AudioResource,
+} from "@discordjs/voice";
 
-const createResource = (youtubeLink: string, volume: number) => {
+const createResource = (youtubeLink: string, volume: number): AudioResource => {
   const stream = ytdl(youtubeLink, {
     filter: "audioonly",
-    highWaterMark: 1 << 30,
+    quality: "highestaudio",
+    highWaterMark: 1 << 25,
+    dlChunkSize: 1 << 20,
     liveBuffer: 20000,
-    dlChunkSize: 4096,
-    // quality: "highestaudio",
+    requestOptions: {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    },
   });
-  const resource = createAudioResource(stream, {
-    inputType: StreamType.Arbitrary,
+
+  stream.on("response", (res: any) => {
+    console.info(
+      `${process.pid} | Stream | response ${res.statusCode} | ${youtubeLink}`
+    );
+  });
+
+  stream.on("error", (err: any) => {
+    console.error(
+      `${process.pid} | Stream | error: ${err?.message ?? String(err)} | ${
+        (err as any)?.statusCode ? `status=${(err as any).statusCode}` : ""
+      } | ${youtubeLink}`
+    );
+  });
+
+  // @ts-ignore
+  stream.on("info", (_info: any, format: any) => {
+    console.info(
+      `${process.pid} | Stream | format: ${format?.mimeType ?? "unknown"} | ${
+        format?.audioBitrate ?? "?"
+      }kbps | ${youtubeLink}`
+    );
+  });
+
+  const resource = createAudioResource(stream as any, {
+    inputType: StreamType.WebmOpus,
     inlineVolume: true,
   });
 
-  if (Number(resource.volume) !== volume) {
-    resource?.volume?.setVolume(volume);
-  }
+  resource.volume?.setVolume(volume);
 
   return resource;
 };
 
 const fetchSongs = async () => {
   try {
-    let { rows } = await db.query("SELECT * FROM links ORDER BY position ASC");
+    const { rows } = await db.query(
+      "SELECT * FROM links ORDER BY position ASC"
+    );
     return rows;
   } catch (error) {
     console.log(`Error fetching links: ${error}`);
@@ -36,9 +71,9 @@ interface Status {
   status: string;
 }
 
-const stateChangeLogger = (level: string, optionalData: string = "") => {
+const stateChangeLogger = (level: string, _optionalData: string = "") => {
   return (oldState: Status, newState: Status) => {
-    let stateChange = `${oldState.status}->${newState.status}`;
+    const stateChange = `${oldState.status}->${newState.status}`;
     logWrapper(level, stateChange);
   };
 };
