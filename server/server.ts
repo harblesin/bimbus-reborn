@@ -8,28 +8,28 @@ dotenv.config();
 const app = express();
 const PORT = process.env.NODE_SERVER_PORT || 8080;
 
-// ✅ Always resolve frontend paths from the repo root (cwd),
-// not from __dirname (which changes when you run dist-server output).
-const REPO_ROOT = process.cwd();
-const BUILD_DIR = path.resolve(REPO_ROOT, "build");
-const PUBLIC_DIR = path.resolve(REPO_ROOT, "public");
+// Works in BOTH:
+// - dev TS:    __dirname = .../server
+// - prod JS:   __dirname = .../dist-server/server
+const ROOT_DIR = path.resolve(__dirname, "..", "..");
+const BUILD_DIR = path.join(ROOT_DIR, "build");
+const PUBLIC_DIR = path.join(ROOT_DIR, "public");
 
 function startServer(): Promise<void> {
-  return new Promise<void>(async (resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     try {
       app.use(express.urlencoded({ extended: true, limit: "1mb" }));
       app.use(express.json({ limit: "1mb" }));
 
-      // Serve CRA build output
+      // CRA build output
       app.use(express.static(BUILD_DIR));
 
-      // Optional: serve any extra static assets you keep in /public
-      // (CRA normally bundles assets into /build, but keep this if you rely on it)
+      // Optional (only if you actually have /public assets you serve at runtime)
       app.use(express.static(PUBLIC_DIR));
 
       app.use(router);
 
-      // SPA fallback — only after router + static
+      // SPA fallback
       app.get("*", (req, res) => {
         res.sendFile(path.join(BUILD_DIR, "index.html"));
       });
