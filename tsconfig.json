@@ -1,27 +1,20 @@
 {
   "compilerOptions": {
-    "target": "es2016",                                  /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
-    "jsx": "react-jsx",                                /* Specify what JSX code is generated. */
-
-    /* Modules */
-    "module": "commonjs",                                /* Specify what module code is generated. */
-    "esModuleInterop": true,                             /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */
-    "forceConsistentCasingInFileNames": true,            /* Ensure that casing is correct in imports. */
-    "rootDir": "./src",       // Root directory of TypeScript source files
-    // "strict": true,  
-    /* Type Checking */
-    "skipLibCheck": true,      
-    "outDir": "./dist",        
-    "noImplicitAny": false,
-    "strict": false           /* Skip type checking all .d.ts files. */
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
   },
-  "include": ["src/**/*", "declaration.d.ts"],
-  "exclude": [
-    "./bot/tests/",
-    "./node_modules/",
-    "./dist/",
-    "./distApp",
-    "./app",
-    "./.db",
-    "./.env"
-  ]}
+  "include": ["src"]
+}
