@@ -69,7 +69,7 @@ export function SongList<T extends BaseItem>({
       >
         <SortableContext items={items}>
           <ul className={styles.SortableList} role="application">
-            {items.map((item) => (
+            {items?.map((item) => (
               <span
                 key={item.id}
                 className={nowPlayingId === item.id ? styles.nowPlaying : null}
