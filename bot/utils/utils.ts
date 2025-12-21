@@ -41,6 +41,33 @@ const createResource = (youtubeLink: string, volume: number) => {
 
   const output = new PassThrough();
 
+  let closed = false;
+  const closeAll = () => {
+    if (closed) return;
+    closed = true;
+
+    try {
+      output.end();
+    } catch {}
+    try {
+      output.destroy();
+    } catch {}
+
+    try {
+      yt.stdout?.unpipe();
+    } catch {}
+    try {
+      ff.stdout?.unpipe();
+    } catch {}
+
+    try {
+      yt.kill("SIGKILL");
+    } catch {}
+    try {
+      ff.kill("SIGKILL");
+    } catch {}
+  };
+
   (yt.stdout as any).pipe(ff.stdin as any);
   (ff.stdout as any).pipe(output);
 
@@ -54,44 +81,33 @@ const createResource = (youtubeLink: string, volume: number) => {
     if (msg) console.error(`${process.pid} | ffmpeg | ${msg}`);
   });
 
-  const kill = () => {
-    try {
-      yt.kill("SIGKILL");
-    } catch {}
-    try {
-      ff.kill("SIGKILL");
-    } catch {}
-    try {
-      output.destroy();
-    } catch {}
-  };
-
-  yt.on("close", (code) => {
-    if (code !== 0) {
-      console.error(
-        `${process.pid} | yt-dlp | exited with code ${code} | ${youtubeLink}`
-      );
-      kill();
-    }
+  yt.on("exit", (code, signal) => {
+    if (closed) return;
+    console.error(
+      `${process.pid} | yt-dlp | exit code=${code} signal=${signal} | ${youtubeLink}`
+    );
+    closeAll();
   });
 
-  ff.on("close", (code) => {
-    if (code !== 0) {
-      console.error(
-        `${process.pid} | ffmpeg | exited with code ${code} | ${youtubeLink}`
-      );
-      kill();
-    }
+  ff.on("exit", (code, signal) => {
+    if (closed) return;
+    console.error(
+      `${process.pid} | ffmpeg | exit code=${code} signal=${signal} | ${youtubeLink}`
+    );
+    closeAll();
   });
 
-  output.on("error", kill);
+  output.on("close", closeAll);
+  output.on("error", closeAll);
 
-  const resource = createAudioResource(output, {
+  const resource: any = createAudioResource(output, {
     inputType: StreamType.OggOpus,
     inlineVolume: true,
   });
 
   resource.volume?.setVolume(volume);
+
+  resource.__cleanup = closeAll;
 
   return resource;
 };

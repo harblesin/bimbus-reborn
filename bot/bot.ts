@@ -41,7 +41,6 @@ const DEFAULT_SERVER_ID = requireEnv("DEFAULT_SERVER_ID");
 const DEFAULT_CHANNEL_ID = requireEnv("DEFAULT_CHANNEL_ID");
 const NODE_ENV = process.env.NODE_ENV;
 
-// Voice + player state that web commands can rely on
 let connection: VoiceConnection | null = null;
 
 let readyResolved = false;
@@ -85,6 +84,17 @@ async function safeFetchSongs() {
   return songs;
 }
 
+function cleanupCurrentResource() {
+  try {
+    (currentResource as any)?.__cleanup?.();
+  } catch {}
+}
+
+function playResource(resource: any) {
+  player.stop(true);
+  player.play(resource);
+}
+
 async function playAtIndex(index: number) {
   await readyPromise;
 
@@ -96,10 +106,10 @@ async function playAtIndex(index: number) {
   if (index > songs.length - 1) index = songs.length - 1;
 
   nowPlayingIndex = index;
-  currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
 
-  player.stop(true);
-  player.play(currentResource);
+  cleanupCurrentResource();
+  currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
+  playResource(currentResource);
 }
 
 async function nextSong() {
@@ -114,9 +124,9 @@ async function nextSong() {
       nowPlayingIndex === songs.length - 1 ? 0 : nowPlayingIndex + 1;
   }
 
+  cleanupCurrentResource();
   currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
-  player.stop(true);
-  player.play(currentResource);
+  playResource(currentResource);
 }
 
 async function prevSong() {
@@ -131,9 +141,9 @@ async function prevSong() {
       nowPlayingIndex === 0 ? songs.length - 1 : nowPlayingIndex - 1;
   }
 
+  cleanupCurrentResource();
   currentResource = createResource(songs[nowPlayingIndex].link, currentVolume);
-  player.stop(true);
-  player.play(currentResource);
+  playResource(currentResource);
 }
 
 client.once("ready", async () => {
@@ -163,10 +173,8 @@ client.once("ready", async () => {
   connection.subscribe(player);
   player.on("stateChange", stateChangeLogger("Player"));
 
-  // ✅ Unblock web commands now that we're subscribed
   readyResolve();
 
-  // start playback
   await playAtIndex(nowPlayingIndex);
 
   player.on(AudioPlayerStatus.Playing, async () => {
@@ -194,7 +202,7 @@ client.once("ready", async () => {
 
   player.on(AudioPlayerStatus.Idle, () => {
     const elapsed = Date.now() - lastPlayAttemptAt;
-    const delay = elapsed < 1500 ? 1500 : 0;
+    const delay = elapsed < 3000 ? 5000 : 0;
     setTimeout(() => void nextSong(), delay);
   });
 
@@ -203,7 +211,7 @@ client.once("ready", async () => {
       "Player",
       `Error thrown within player: ${error.message ?? String(error)}`
     );
-    void nextSong();
+    setTimeout(() => void nextSong(), 5000);
   });
 });
 
@@ -231,8 +239,6 @@ client.on("voiceStateUpdate", () => {
   }
 });
 
-// WEB COMMANDS
-
 export const webResume = async () => {
   await readyPromise;
   webPlayerIsPaused = false;
@@ -247,8 +253,6 @@ export const webPause = async () => {
 
 export const webPlay = async (id: any) => {
   await readyPromise;
-
-  // If the user hit "play", treat it as taking over from any prior web pause
   webPlayerIsPaused = false;
 
   const songs = await safeFetchSongs();
@@ -297,15 +301,15 @@ export const updateNowPlayingIndex = async (
   const newIndex = updatedList.findIndex((s: any) => s.id === nowPlayingId);
 
   if (newIndex < 0) {
-    // current song removed; pick a safe next index
     const songs = await safeFetchSongs();
     if (nowPlayingIndex >= songs.length) nowPlayingIndex = 0;
+
+    cleanupCurrentResource();
     currentResource = createResource(
       songs[nowPlayingIndex].link,
       currentVolume
     );
-    player.stop(true);
-    player.play(currentResource);
+    playResource(currentResource);
   } else {
     nowPlayingIndex = newIndex;
   }
